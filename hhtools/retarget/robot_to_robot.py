@@ -28,6 +28,7 @@ and :func:`~hhtools.retarget.calibration.calibration.derive_calibration_params`.
 
 from __future__ import annotations
 
+import csv
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -360,6 +361,109 @@ def _align_trajectory_dof_names(
     return fallback_dof_names + extra
 
 
+def _normalized_csv_column(name: str) -> str:
+    text = str(name).strip().lower()
+    for ch in (" ", "-", "(", ")", "[", "]", "{", "}"):
+        text = text.replace(ch, "_")
+    while "__" in text:
+        text = text.replace("__", "_")
+    return text.strip("_")
+
+
+def _motiondecode_running_root_columns(header: list[str]) -> bool:
+    return tuple(_normalized_csv_column(col) for col in header[:7]) == (
+        "root_pos_x_m", "root_pos_y_m", "root_pos_z_m",
+        "root_rot_w", "root_rot_x", "root_rot_y", "root_rot_z",
+    )
+
+
+def _load_motiondecode_running_csv(
+    path: Path,
+    *,
+    header: list[str],
+    body_rows: list[list[str]],
+    fallback_dof_names: tuple[str, ...] | None,
+) -> SourceTrajectory:
+    """Convert MotionDecode-running CSV into the hhtools ``joint_q`` layout."""
+    if body_rows:
+        arr = np.asarray(body_rows, dtype=np.float64)
+        joint_q = arr.astype(np.float32, copy=False)
+        joint_q = _wxyz_to_xyzw(joint_q)
+    else:
+        joint_q = np.zeros((0, len(header)), dtype=np.float32)
+
+    declared_dof_names = tuple(
+        col[len("dof_"):].split("(", 1)[0].strip()
+        for col in header[7:]
+        if col.startswith("dof_")
+    )
+    n_dof_cols = max(joint_q.shape[1] - 7, 0)
+    dof_names = (
+        declared_dof_names
+        if len(declared_dof_names) == n_dof_cols
+        else _align_trajectory_dof_names(n_dof_cols, fallback_dof_names)
+    )
+    return SourceTrajectory(
+        joint_q=joint_q,
+        dof_names=dof_names,
+        framerate=30.0,
+        meta={"source_format": "motiondecode_running_csv", "root_quat_format": "wxyz"},
+    )
+
+
+def _load_header_only_robot_csv(
+    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+) -> SourceTrajectory:
+    """Load robot CSVs that include column names but omit ``time`` and comments."""
+    with path.open("r", encoding="utf-8") as fp:
+        reader = csv.reader(fp)
+        rows = [row for row in reader if row and any(str(cell).strip() for cell in row)]
+    if not rows:
+        raise ValueError(f"{path}: no rows found")
+
+    header = [str(cell).strip() for cell in rows[0]]
+    norm = [_normalized_csv_column(col) for col in header]
+    root_aliases = (
+        "root_x", "root_y", "root_z", "root_qx", "root_qy", "root_qz", "root_qw",
+    )
+    if _motiondecode_running_root_columns(header):
+        return _load_motiondecode_running_csv(
+            path,
+            header=header,
+            body_rows=rows[1:],
+            fallback_dof_names=fallback_dof_names,
+        )
+
+    if tuple(norm[:7]) != root_aliases:
+        raise ValueError(f"{path}: unsupported CSV header layout {header[:8]!r}")
+
+    body_rows = rows[1:]
+    if not body_rows:
+        joint_q = np.zeros((0, len(header)), dtype=np.float32)
+    else:
+        arr = np.asarray(body_rows, dtype=np.float64)
+        joint_q = arr.astype(np.float32, copy=False)
+
+    declared_dof_names = tuple(
+        col[len("dof_"):].split("(", 1)[0].strip()
+        for col in header[7:]
+        if col.startswith("dof_")
+    )
+    n_dof_cols = max(joint_q.shape[1] - 7, 0)
+    dof_names = (
+        declared_dof_names
+        if len(declared_dof_names) == n_dof_cols
+        else _align_trajectory_dof_names(n_dof_cols, fallback_dof_names)
+    )
+
+    return SourceTrajectory(
+        joint_q=joint_q,
+        dof_names=dof_names,
+        framerate=30.0,
+        meta={"source_format": "header_only_csv"},
+    )
+
+
 def _load_csv_trajectory(
     path: Path, *, fallback_dof_names: tuple[str, ...] | None
 ) -> SourceTrajectory:
@@ -374,6 +478,12 @@ def _load_csv_trajectory(
             meta=dict(csv.meta),
         )
     except ValueError:
+        try:
+            return _load_header_only_robot_csv(
+                path, fallback_dof_names=fallback_dof_names
+            )
+        except ValueError:
+            pass
         # Header-less, comment-less numeric CSV: assume the column layout is
         # time + 7 root + N dof in the source robot's dof_order.
         rows: list[list[str]] = []
@@ -416,9 +526,58 @@ def _extract_robot_trajectory_block(blob: object, *, path: Path | None = None) -
     )
 
 
-def _load_pkl_trajectory(path: Path) -> SourceTrajectory:
+def _load_custom_robot_pkl_trajectory(
+    robot: dict,
+    *,
+    path: Path,
+    fallback_dof_names: tuple[str, ...] | None,
+) -> SourceTrajectory | None:
+    """Parse lightweight robot clips with ``root_pos`` / ``root_rot`` / ``dof_pos``."""
+    required = ("root_pos", "root_rot", "dof_pos")
+    if not all(key in robot for key in required):
+        return None
+    root_pos = np.asarray(robot["root_pos"], dtype=np.float32)
+    root_rot = np.asarray(robot["root_rot"], dtype=np.float32)
+    dof_pos = np.asarray(robot["dof_pos"], dtype=np.float32)
+    if root_pos.ndim != 2 or root_pos.shape[1] != 3:
+        raise ValueError(f"{path}: root_pos shape {root_pos.shape} is not (F, 3)")
+    if root_rot.ndim != 2 or root_rot.shape[1] != 4:
+        raise ValueError(f"{path}: root_rot shape {root_rot.shape} is not (F, 4)")
+    if dof_pos.ndim != 2:
+        raise ValueError(f"{path}: dof_pos shape {dof_pos.shape} is not (F, N)")
+    if root_pos.shape[0] != root_rot.shape[0] or root_pos.shape[0] != dof_pos.shape[0]:
+        raise ValueError(
+            f"{path}: root/dof frame counts differ "
+            f"({root_pos.shape[0]}, {root_rot.shape[0]}, {dof_pos.shape[0]})"
+        )
+    dof_names = _align_trajectory_dof_names(dof_pos.shape[1], fallback_dof_names)
+    joint_q = np.concatenate([root_pos, root_rot, dof_pos], axis=1).astype(np.float32, copy=False)
+    fps = float(robot.get("sample_rate", robot.get("fps", 30.0)))
+    meta: dict[str, object] = {
+        "source_format": "root_pos_root_rot_dof_pos",
+    }
+    link_body_list = robot.get("link_body_list")
+    if isinstance(link_body_list, list):
+        meta["link_body_list"] = [str(name) for name in link_body_list]
+    return SourceTrajectory(
+        joint_q=joint_q,
+        dof_names=dof_names,
+        framerate=fps,
+        meta=meta,
+    )
+
+
+def _load_pkl_trajectory(
+    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+) -> SourceTrajectory:
     with path.open("rb") as fp:
         blob = pickle.load(fp)
+    if isinstance(blob, dict):
+        custom = _load_custom_robot_pkl_trajectory(
+            blob, path=path, fallback_dof_names=fallback_dof_names,
+        )
+        if custom is not None:
+            return custom
     robot = _extract_robot_trajectory_block(blob, path=path)
     joint_q = np.asarray(robot["joint_q"], dtype=np.float32)
     dof_names = tuple(str(n) for n in robot.get("dof_names", ()))
@@ -478,7 +637,7 @@ def load_source_trajectory(
     if suffix == ".csv":
         traj = _load_csv_trajectory(path, fallback_dof_names=fallback)
     elif suffix in (".pkl", ".pickle"):
-        traj = _load_pkl_trajectory(path)
+        traj = _load_pkl_trajectory(path, fallback_dof_names=fallback)
     elif suffix == ".npz":
         traj = _load_npz_trajectory(path, fallback_dof_names=fallback)
     else:
