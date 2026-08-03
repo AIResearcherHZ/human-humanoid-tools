@@ -4850,10 +4850,13 @@ async function r2rUploadTraj(files, profile = "auto") {
   try {
     switchInspectorPanel("r2r");
     if (!r2r.active) r2rEnterPanel();
-    const qs = [
+    const qsParts = [
       `source_robot=${encodeURIComponent(r2r.sourceName)}`,
       `profile=${encodeURIComponent(profile)}`,
-    ].join("&");
+    ];
+    const srcFps = parseOptionalFps(document.getElementById("r2r-source-fps"));
+    if (srcFps != null) qsParts.push(`source_fps=${encodeURIComponent(srcFps)}`);
+    const qs = qsParts.join("&");
     const { job_id } = await uploadFilesXHR(
       `/api/r2r/source/upload?${qs}`,
       files,
@@ -5176,8 +5179,10 @@ function r2rInit() {
       };
       const exFps = parseOptionalFps(document.getElementById("r2r-batch-export-fps"));
       const rtFps = parseOptionalFps(document.getElementById("r2r-retarget-fps"));
+      const srcFps = parseOptionalFps(document.getElementById("r2r-source-fps"));
       if (exFps) body.export_fps = exFps;
       if (rtFps) body.retarget_fps = rtFps;
+      if (srcFps) body.source_fps = srcFps;
       const t0 = parseOptionalTime(document.getElementById("r2r-batch-t-start"));
       const t1 = parseOptionalTime(document.getElementById("r2r-batch-t-end"));
       if (t0 != null) body.t_start = t0;

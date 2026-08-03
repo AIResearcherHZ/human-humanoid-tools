@@ -48,7 +48,11 @@ from hhtools.retarget.calibration.reference import HumanReferencePose
 from hhtools.retarget.retarget_result import RetargetedMotion
 from hhtools.robot.loader import URDFRobotModel
 
+# Fallback when a foreign robot CSV/PKL/NPZ omits ``time`` / ``sample_rate``.
+DEFAULT_SOURCE_FRAMERATE = 50.0
+
 __all__ = [
+    "DEFAULT_SOURCE_FRAMERATE",
     "SourceTrajectory",
     "build_source_reference_pose",
     "load_r2r_calibration",
@@ -377,12 +381,25 @@ def _motiondecode_running_root_columns(header: list[str]) -> bool:
     )
 
 
+def _resolve_source_framerate(
+    declared: float | None,
+    source_fps: float | None,
+) -> float:
+    """Prefer file metadata; otherwise use ``source_fps`` or the R2R default."""
+    if declared is not None and float(declared) > 0:
+        return float(declared)
+    if source_fps is not None and float(source_fps) > 0:
+        return float(source_fps)
+    return float(DEFAULT_SOURCE_FRAMERATE)
+
+
 def _load_motiondecode_running_csv(
     path: Path,
     *,
     header: list[str],
     body_rows: list[list[str]],
     fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     """Convert MotionDecode-running CSV into the hhtools ``joint_q`` layout."""
     if body_rows:
@@ -406,13 +423,16 @@ def _load_motiondecode_running_csv(
     return SourceTrajectory(
         joint_q=joint_q,
         dof_names=dof_names,
-        framerate=30.0,
+        framerate=_resolve_source_framerate(None, source_fps),
         meta={"source_format": "motiondecode_running_csv", "root_quat_format": "wxyz"},
     )
 
 
 def _load_header_only_robot_csv(
-    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+    path: Path,
+    *,
+    fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     """Load robot CSVs that include column names but omit ``time`` and comments."""
     with path.open("r", encoding="utf-8") as fp:
@@ -432,6 +452,7 @@ def _load_header_only_robot_csv(
             header=header,
             body_rows=rows[1:],
             fallback_dof_names=fallback_dof_names,
+            source_fps=source_fps,
         )
 
     if tuple(norm[:7]) != root_aliases:
@@ -459,18 +480,22 @@ def _load_header_only_robot_csv(
     return SourceTrajectory(
         joint_q=joint_q,
         dof_names=dof_names,
-        framerate=30.0,
+        framerate=_resolve_source_framerate(None, source_fps),
         meta={"source_format": "header_only_csv"},
     )
 
 
 def _load_csv_trajectory(
-    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+    path: Path,
+    *,
+    fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     from hhtools.io.robot_csv import load_robot_csv
 
     try:
         csv = load_robot_csv(path)
+        # hhtools CSV carries ``# sample_rate`` and/or a ``time`` column.
         return SourceTrajectory(
             joint_q=np.asarray(csv.joint_q, dtype=np.float32),
             dof_names=tuple(csv.dof_names),
@@ -480,7 +505,9 @@ def _load_csv_trajectory(
     except ValueError:
         try:
             return _load_header_only_robot_csv(
-                path, fallback_dof_names=fallback_dof_names
+                path,
+                fallback_dof_names=fallback_dof_names,
+                source_fps=source_fps,
             )
         except ValueError:
             pass
@@ -500,10 +527,12 @@ def _load_csv_trajectory(
         joint_q = arr[:, 1:].astype(np.float32)
         n_dof_cols = joint_q.shape[1] - 7
         dof_names = _align_trajectory_dof_names(n_dof_cols, fallback_dof_names)
-        if times.shape[0] > 1:
-            fps = float(1.0 / max(times[1] - times[0], 1e-6))
-        else:
-            fps = 30.0
+        declared = (
+            float(1.0 / max(times[1] - times[0], 1e-6))
+            if times.shape[0] > 1
+            else None
+        )
+        fps = _resolve_source_framerate(declared, source_fps)
         return SourceTrajectory(
             joint_q=joint_q, dof_names=dof_names, framerate=fps, meta={},
         )
@@ -531,6 +560,7 @@ def _load_custom_robot_pkl_trajectory(
     *,
     path: Path,
     fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory | None:
     """Parse lightweight robot clips with ``root_pos`` / ``root_rot`` / ``dof_pos``."""
     required = ("root_pos", "root_rot", "dof_pos")
@@ -552,7 +582,12 @@ def _load_custom_robot_pkl_trajectory(
         )
     dof_names = _align_trajectory_dof_names(dof_pos.shape[1], fallback_dof_names)
     joint_q = np.concatenate([root_pos, root_rot, dof_pos], axis=1).astype(np.float32, copy=False)
-    fps = float(robot.get("sample_rate", robot.get("fps", 30.0)))
+    declared = None
+    for key in ("sample_rate", "fps", "framerate"):
+        if key in robot and robot[key] is not None:
+            declared = float(robot[key])
+            break
+    fps = _resolve_source_framerate(declared, source_fps)
     meta: dict[str, object] = {
         "source_format": "root_pos_root_rot_dof_pos",
     }
@@ -568,20 +603,31 @@ def _load_custom_robot_pkl_trajectory(
 
 
 def _load_pkl_trajectory(
-    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+    path: Path,
+    *,
+    fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     with path.open("rb") as fp:
         blob = pickle.load(fp)
     if isinstance(blob, dict):
         custom = _load_custom_robot_pkl_trajectory(
-            blob, path=path, fallback_dof_names=fallback_dof_names,
+            blob,
+            path=path,
+            fallback_dof_names=fallback_dof_names,
+            source_fps=source_fps,
         )
         if custom is not None:
             return custom
     robot = _extract_robot_trajectory_block(blob, path=path)
     joint_q = np.asarray(robot["joint_q"], dtype=np.float32)
     dof_names = tuple(str(n) for n in robot.get("dof_names", ()))
-    fps = float(robot.get("sample_rate", robot.get("fps", 30.0)))
+    declared = None
+    for key in ("sample_rate", "fps", "framerate"):
+        if key in robot and robot[key] is not None:
+            declared = float(robot[key])
+            break
+    fps = _resolve_source_framerate(declared, source_fps)
     if str(robot.get("root_quat_format", "xyzw")).lower() == "wxyz":
         joint_q = _wxyz_to_xyzw(joint_q)
     return SourceTrajectory(
@@ -590,7 +636,10 @@ def _load_pkl_trajectory(
 
 
 def _load_npz_trajectory(
-    path: Path, *, fallback_dof_names: tuple[str, ...] | None
+    path: Path,
+    *,
+    fallback_dof_names: tuple[str, ...] | None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     data = np.load(path, allow_pickle=True)
     keys = set(data.files)
@@ -606,11 +655,12 @@ def _load_npz_trajectory(
         dof_names = _align_trajectory_dof_names(
             joint_q.shape[1] - 7, fallback_dof_names,
         )
-    fps = 30.0
+    declared = None
     for k in ("sample_rate", "fps", "framerate"):
         if k in keys:
-            fps = float(np.asarray(data[k]).reshape(-1)[0])
+            declared = float(np.asarray(data[k]).reshape(-1)[0])
             break
+    fps = _resolve_source_framerate(declared, source_fps)
     quat_fmt = "xyzw"
     if "root_quat_format" in keys:
         quat_fmt = str(data["root_quat_format"]).lower()
@@ -623,6 +673,7 @@ def load_source_trajectory(
     path: str | Path,
     *,
     source_model: URDFRobotModel | None = None,
+    source_fps: float | None = None,
 ) -> SourceTrajectory:
     """Load a robot trajectory exported in the hhtools schema.
 
@@ -630,16 +681,26 @@ def load_source_trajectory(
     ``.pkl``, and ``.npz``.  When the file omits DOF names, the source robot's
     ``dof_order`` is used as a fallback.  Pure numeric CSV (no ``#`` comments,
     no column header) infers ``sample_rate`` from the first two ``time`` values.
+
+    ``source_fps`` is used only when the file has no ``time`` / ``sample_rate``
+    metadata (e.g. MotionDecode header-only CSV).  Defaults to
+    :data:`DEFAULT_SOURCE_FRAMERATE` (50).
     """
     path = Path(path)
     suffix = path.suffix.lower()
     fallback = tuple(source_model.dof_names()) if source_model is not None else None
     if suffix == ".csv":
-        traj = _load_csv_trajectory(path, fallback_dof_names=fallback)
+        traj = _load_csv_trajectory(
+            path, fallback_dof_names=fallback, source_fps=source_fps,
+        )
     elif suffix in (".pkl", ".pickle"):
-        traj = _load_pkl_trajectory(path, fallback_dof_names=fallback)
+        traj = _load_pkl_trajectory(
+            path, fallback_dof_names=fallback, source_fps=source_fps,
+        )
     elif suffix == ".npz":
-        traj = _load_npz_trajectory(path, fallback_dof_names=fallback)
+        traj = _load_npz_trajectory(
+            path, fallback_dof_names=fallback, source_fps=source_fps,
+        )
     else:
         raise ValueError(
             f"unsupported source trajectory format {suffix!r}; expected "

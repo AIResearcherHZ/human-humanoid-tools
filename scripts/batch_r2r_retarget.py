@@ -71,6 +71,7 @@ class _R2rConfig:
     fmt: str
     csv_header: bool
     fps: float | None
+    source_fps: float | None = None
     t_start: float | None = None
     t_end: float | None = None
 
@@ -115,7 +116,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--skip-existing", action="store_true")
     p.add_argument("--fmt", choices=("csv", "pkl"), default="csv")
     p.add_argument("--no-csv-header", action="store_true")
-    p.add_argument("--fps", type=float, default=None)
+    p.add_argument("--fps", type=float, default=None, help="Export resample FPS.")
+    p.add_argument(
+        "--source-fps",
+        type=float,
+        default=None,
+        help=(
+            "Source trajectory FPS when the file omits time/sample_rate "
+            "(e.g. MotionDecode CSV). Default: 50."
+        ),
+    )
     p.add_argument(
         "--t-start",
         type=float,
@@ -240,7 +250,9 @@ def process_r2r_clip(seq_key: str, cfg: _R2rConfig) -> Path:
         init_zero=False,  # init only in parent process
     )
 
-    traj = r2r.load_source_trajectory(traj_path, source_model=source_model)
+    traj = r2r.load_source_trajectory(
+        traj_path, source_model=source_model, source_fps=cfg.source_fps,
+    )
     joint_q = traj.joint_q
     if cfg.limit_frames is not None and joint_q.shape[0] > cfg.limit_frames:
         joint_q = joint_q[: cfg.limit_frames]
@@ -323,6 +335,8 @@ def _worker_command(cfg: _R2rConfig, seq_key: str, *, verbose: bool) -> list[str
         cmd.extend(["--limit-frames", str(cfg.limit_frames)])
     if cfg.fps is not None:
         cmd.extend(["--fps", str(cfg.fps)])
+    if cfg.source_fps is not None:
+        cmd.extend(["--source-fps", str(cfg.source_fps)])
     if cfg.t_start is not None:
         cmd.extend(["--t-start", str(cfg.t_start)])
     if cfg.t_end is not None:
@@ -352,6 +366,7 @@ def main(argv: list[str] | None = None) -> int:
         fmt=args.fmt,
         csv_header=not args.no_csv_header,
         fps=args.fps,
+        source_fps=args.source_fps,
         t_start=args.t_start,
         t_end=args.t_end,
     )

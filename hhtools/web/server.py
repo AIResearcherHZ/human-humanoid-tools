@@ -37,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 # Bump when static/ front-end behaviour changes.  Injected into ``index.html``
 # at serve time so collaborators only need to pull + restart (no triple-sync).
-UI_BUILD_ID = "20260716-v85"
+UI_BUILD_ID = "20260803-v86"
 
 # Datasets whose adapters accept ``with_mesh=True`` (SMPL forward → baked vertices).
 # The web UI always requests mesh so AMASS / Motion-X etc. show a real body surface,
@@ -1769,12 +1769,14 @@ def create_app(
         files: list[UploadFile] = File(...),
         source_robot: str = "",
         profile: str = "auto",
+        source_fps: float | None = None,
     ) -> dict:
         """Upload robot trajectory clip(s); FK runs in a background job with progress."""
         if not files:
             raise HTTPException(status_code=400, detail="no trajectory file uploaded")
         if not source_robot:
             raise HTTPException(status_code=400, detail="source_robot is required")
+        src_fps = _parse_optional_fps(source_fps)
         drop = state.upload_root / f"r2r_{uuid.uuid4().hex[:8]}"
         drop.mkdir(parents=True, exist_ok=True)
         for uf in files:
@@ -1786,7 +1788,7 @@ def create_app(
         state.jobs[job.id] = job
         threading.Thread(
             target=_run_r2r_source_upload_job,
-            args=(job, drop, source_robot, profile, state),
+            args=(job, drop, source_robot, profile, state, src_fps),
             daemon=True,
         ).start()
         return {"job_id": job.id}
@@ -2403,10 +2405,14 @@ def _build_r2r_calibration_session(target_model, source_model) -> dict:
 
 def _compute_r2r_scaled_preview(source_model, target_model, motion, calibrated_joint_q) -> dict:
     """Yellow scaled skeleton for R2R — uniform overlay + foot grounding (Viser parity)."""
+    import numpy as np
+
     from hhtools.retarget import robot_to_robot as r2r
     from hhtools.retarget.calibration.calibration import uniform_overlay_scale_for_motion
     from hhtools.retarget.newton_basic.scaler import HumanToRobotScaler
+    from hhtools.viewer.anatomy import motion_has_interaction_scene
     from hhtools.web.scaled_preview import (
+        _snap_scaled_overlay_positions_to_foot_floor,
         _uniform_scaled_preview_fallback,
         resolve_scaled_overlay_z_correction,
     )
@@ -2425,13 +2431,24 @@ def _compute_r2r_scaled_preview(source_model, target_model, motion, calibrated_j
         )
     )
     z_correction = resolve_scaled_overlay_z_correction(motion, scaler, ratio)
-    return _uniform_scaled_preview_fallback(
+    preview = _uniform_scaled_preview_fallback(
         motion,
         cfg,
         human_height,
         ik_canons,
         z_correction=z_correction,
     )
+    # Uniform scale grounds the clip-wide lowest *joint* (often a wrist during
+    # get-up).  Snap feet/ankles to z=0 so playback ``mesh_z_lift`` does not
+    # float the robot.  Keep terrain/object clips co-aligned with scaled scene.
+    if not motion_has_interaction_scene(motion):
+        pos = _snap_scaled_overlay_positions_to_foot_floor(
+            np.asarray(preview["positions"], dtype=np.float32),
+            preview["bone_names"],
+        )
+        preview = dict(preview)
+        preview["positions"] = np.round(pos, 4).tolist()
+    return preview
 
 
 def _align_scaled_preview_to_robot_playback(
@@ -2444,7 +2461,6 @@ def _align_scaled_preview_to_robot_playback(
     import numpy as np
 
     from hhtools.web.serialize import (
-        _lowest_ankle_z,
         _quat_xyzw_to_rotmat,
         _scaled_overlay_foot_z,
         _scene_min_mesh_z,
@@ -2466,17 +2482,14 @@ def _align_scaled_preview_to_robot_playback(
     dof0 = np.asarray(retargeted.dof_trajectory[f0], dtype=np.float64)
     cfg0 = {ret_dof_names[i]: float(dof0[i]) for i in range(len(ret_dof_names))}
     target_model.apply_configuration(cfg0)
-    ik_map = dict(target_model.preset.ik_map) if target_model.preset.ik_map else {}
     root_rot = _quat_xyzw_to_rotmat(root[3:7])
-    ankle_z = _lowest_ankle_z(target_model, ik_map, root_rot)
-    if ankle_z is not None:
-        # Browser playback: group.z = root.z + mesh_z_lift; ankles ride on the group.
-        robot_ref_z = float(root[2] + mesh_lift + ankle_z)
-    else:
-        min_mesh_z = _scene_min_mesh_z(target_model.trimesh_scene(), root_rot)
-        robot_ref_z = (
-            float(root[2] + mesh_lift + min_mesh_z) if min_mesh_z is not None else 0.0
-        )
+    # Browser playback: group.z = root.z + mesh_z_lift; sole is the mesh AABB
+    # bottom (not the ankle link).  Aligning to ankle re-floats the yellow
+    # skeleton by ~sole thickness and fights foot-floor snap.
+    min_mesh_z = _scene_min_mesh_z(target_model.trimesh_scene(), root_rot)
+    robot_ref_z = (
+        float(root[2] + mesh_lift + min_mesh_z) if min_mesh_z is not None else 0.0
+    )
 
     dz = robot_ref_z - float(yellow_z)
     if abs(dz) < 1e-5:
@@ -2495,6 +2508,7 @@ def _run_r2r_source_upload_job(
     source_robot: str,
     profile: str,
     state: SessionState,
+    source_fps: float | None = None,
 ) -> None:
     from hhtools.retarget import robot_to_robot as r2r
     from hhtools.web.r2r_upload_resolve import (
@@ -2533,7 +2547,9 @@ def _run_r2r_source_upload_job(
 
             src_model = load_robot(_get_preset(source_robot), compile_mjcf=False)
             state.robots[source_robot] = src_model
-        traj = r2r.load_source_trajectory(picked, source_model=src_model)
+        traj = r2r.load_source_trajectory(
+            picked, source_model=src_model, source_fps=source_fps,
+        )
 
         def _fk_cb(done: int, total: int) -> None:
             job.progress = 0.1 + 0.55 * (done / max(1, total))
@@ -2764,11 +2780,14 @@ def _r2r_retarget_from_path(
     backend: str = "newton",
     profile: str = "mimic",
     has_scene: bool = False,
+    source_fps: float | None = None,
     job: Job | None = None,
 ):
     from hhtools.retarget import robot_to_robot as r2r
 
-    traj = r2r.load_source_trajectory(traj_path, source_model=source_model)
+    traj = r2r.load_source_trajectory(
+        traj_path, source_model=source_model, source_fps=source_fps,
+    )
     motion_src = r2r.source_trajectory_to_motion(
         source_model,
         traj.joint_q,
@@ -2810,6 +2829,7 @@ def _run_r2r_batch_job(job: Job, body: dict, state: SessionState) -> None:
             raise ValueError("batch entries list is empty")
         ik_iters = int(body.get("ik_iterations", 24))
         retarget_fps = _parse_optional_fps(body.get("retarget_fps"))
+        source_fps = _parse_optional_fps(body.get("source_fps"))
         export_fps = _parse_optional_fps(body.get("export_fps", body.get("fps")))
         export_t_start = _parse_optional_time(body.get("t_start"), name="t_start")
         export_t_end = _parse_optional_time(body.get("t_end"), name="t_end")
@@ -2869,6 +2889,7 @@ def _run_r2r_batch_job(job: Job, body: dict, state: SessionState) -> None:
                     backend=backend,
                     profile=str(e.get("upload_profile") or "mimic"),
                     has_scene=bool(e.get("has_scene")),
+                    source_fps=source_fps,
                     job=job,
                 )
             except Exception as err:  # noqa: BLE001

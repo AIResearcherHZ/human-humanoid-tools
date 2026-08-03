@@ -467,6 +467,11 @@
               </div>
             </div>
           </div>
+          <div class="row" style="margin-top:10px; align-items:center; gap:8px">
+            <label class="k" style="white-space:nowrap" title="无 time/sample_rate 的外来 CSV（如 MotionDecode）使用此值">源轨迹 FPS</label>
+            <input class="search" id="r2r-source-fps" type="number" min="1" step="1" value="50" style="flex:1" />
+          </div>
+          <p class="hint" style="margin-top:4px">默认 50。无时间戳的外来轨迹请按真实采集帧率填写（例如 120）；自有导出带 <code>time</code> / <code># sample_rate</code> 时仍按文件识别。</p>
           <p class="hint" id="r2r-traj-status" style="margin-top:8px">先加载源机器人，再上传轨迹即可播放。</p>
           <div class="progress" style="display:none; margin-top:8px" id="r2r-traj-progress"><div class="bar"></div></div>
         </div>
