@@ -6,8 +6,11 @@ After Newton IK or Interaction-Mesh MPC, the floating base can sit a few
 centimetres above ``z = 0`` even when the scaled source looks planted: IK
 tracks ankle frames, not sole meshes, and foot geometry differs from the
 human.  :func:`snap_joint_q_clip_floor` applies one global root-Z translation
-so the **lowest foot sole point over the whole clip** sits on ``ground_z``
-(flat ground) while preserving relative jumps and steps.
+so the **lowest foot sole among upright frames** (or all frames if none) sits
+on ``ground_z`` while preserving relative jumps and steps.
+
+Lie→stand clips must ignore prone-frame sole penetration when choosing the
+snap reference — otherwise lifting those frames floats the standing feet.
 """
 
 from __future__ import annotations
@@ -22,6 +25,9 @@ if TYPE_CHECKING:
     from hhtools.robot.loader import URDFRobotModel
 
 _log = logging.getLogger(__name__)
+
+# Pelvis/root above sole (m) to count as upright for snap reference selection.
+_UPRIGHT_ROOT_ABOVE_SOLE_M = 0.25
 
 __all__ = [
     "measure_clip_min_foot_world_z",
@@ -98,8 +104,15 @@ def measure_clip_min_foot_world_z(
     joint_q: NDArray,
     *,
     root_coord_count: int = 7,
+    upright_only: bool = False,
+    upright_root_above_sole_m: float = _UPRIGHT_ROOT_ABOVE_SOLE_M,
 ) -> float | None:
-    """Minimum foot-sole world Z over every frame of ``joint_q``."""
+    """Minimum foot-sole world Z over frames of ``joint_q``.
+
+    When ``upright_only`` is true, only frames whose root sits at least
+    ``upright_root_above_sole_m`` above the sole are considered.  If no such
+    frame exists, falls back to the full-clip minimum.
+    """
     q = np.asarray(joint_q, dtype=np.float64)
     if q.ndim != 2 or q.shape[0] == 0 or q.shape[1] < root_coord_count:
         return None
@@ -115,7 +128,8 @@ def measure_clip_min_foot_world_z(
     dof_names = robot.dof_names()
     n_dof = min(len(dof_names), q.shape[1] - root_coord_count)
     saved = robot.zero_configuration()
-    min_z = float("inf")
+    min_all = float("inf")
+    min_upright = float("inf")
     try:
         for f in range(q.shape[0]):
             if n_dof > 0:
@@ -126,15 +140,25 @@ def measure_clip_min_foot_world_z(
                 robot.apply_configuration(cfg)
             else:
                 robot.apply_configuration(saved)
-            z = _frame_min_foot_world_z(robot, q[f, :root_coord_count], foot_parts=foot_parts)
-            if z is not None and z < min_z:
-                min_z = z
+            z = _frame_min_foot_world_z(
+                robot, q[f, :root_coord_count], foot_parts=foot_parts,
+            )
+            if z is None:
+                continue
+            if z < min_all:
+                min_all = z
+            root_z = float(q[f, 2])
+            if root_z - float(z) >= float(upright_root_above_sole_m):
+                if z < min_upright:
+                    min_upright = z
     finally:
         robot.apply_configuration(saved)
 
-    if not np.isfinite(min_z):
-        return None
-    return float(min_z)
+    if upright_only and np.isfinite(min_upright):
+        return float(min_upright)
+    if np.isfinite(min_all):
+        return float(min_all)
+    return None
 
 
 def snap_joint_q_clip_floor(
@@ -145,10 +169,11 @@ def snap_joint_q_clip_floor(
     ground_z: float = 0.0,
     z_index: int = 2,
 ) -> tuple[NDArray, float]:
-    """Translate root Z so the clip-wide minimum foot sole sits on ``ground_z``.
+    """Translate root Z so the reference foot sole sits on ``ground_z``.
 
-    Bidirectional: floating feet are pushed down; penetrating feet are lifted.
-    Relative motion (jumps, steps) is preserved — only a constant root-Z shift.
+    Prefers the lowest sole among **upright** frames (root clearly above the
+    feet).  Fully prone clips fall back to the all-frame minimum.  Relative
+    motion (jumps, steps) is preserved — only a constant root-Z shift.
 
     Returns ``(joint_q_out, delta_z)`` where ``delta_z`` was subtracted from the
     root height column (``out[:, z_index] = in[:, z_index] - delta_z``).
@@ -158,7 +183,7 @@ def snap_joint_q_clip_floor(
         return q, 0.0
 
     min_z = measure_clip_min_foot_world_z(
-        robot, q, root_coord_count=root_coord_count,
+        robot, q, root_coord_count=root_coord_count, upright_only=True,
     )
     if min_z is None:
         return q, 0.0
@@ -170,7 +195,8 @@ def snap_joint_q_clip_floor(
     out = q.astype(np.float32, copy=True)
     out[:, z_index] = out[:, z_index] - np.float32(delta)
     _log.info(
-        "clip floor snap: Δz=%+.4fm so min foot sole (was %.4fm) sits on z=%.4fm",
+        "clip floor snap: Δz=%+.4fm so upright min foot sole (was %.4fm) "
+        "sits on z=%.4fm",
         delta,
         min_z,
         ground_z,

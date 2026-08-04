@@ -693,14 +693,14 @@ def rest_pose_from_motion_bind(
     # canonical T-pose (arms stretched out, legs straight).
     #
     # BVH-style loaders may bake an up-axis conversion into the root; keep
-    # that so the synthesized rest pose stays upright.  HMR4D/GVHMR clips
-    # are special: their root quaternion carries the video-estimated global
-    # body orientation, not a rest-frame axis fix-up.  Keeping that tilt
-    # makes the synthesized bind pose lean sideways, shrinking the measured
-    # Z-height and corrupting both the yellow preview scale and IK targets.
+    # that so the synthesized rest pose stays upright.
     #
-    # Other SMPL-family clips keep the historical behaviour so arbitrary
-    # frame-0 root rotations are absorbed into q_offset by calibration.
+    # SMPL-family ``root_orient`` is always the *global body orientation*
+    # (standing, prone, lying AMASS stageii, HMR/GVHMR video estimates, …),
+    # not a rest-frame axis fix-up.  Keeping a lying frame-0 root makes the
+    # bind T-pose lie flat → ``height_m`` / pelvis-floor collapse → inflated
+    # ``root_z_offset`` and a floating retarget.  Synthesize an upright bind;
+    # calibration absorbs heading into ``q_offset``.
     bind_local_quat = np.zeros_like(local_quat)
     bind_local_quat[:, 3] = 1.0  # identity by default
     try:
@@ -709,14 +709,7 @@ def rest_pose_from_motion_bind(
         smpl_like = is_smpl_like(hierarchy.bone_names)
     except Exception:
         smpl_like = False
-    source_format = str(getattr(motion, "source_format", "") or "").lower()
-    dataset = str(getattr(motion, "meta", {}).get("dataset", "")).lower()
-    hmr_global_orient = smpl_like and (
-        "hmr4d" in source_format
-        or "gvhmr" in source_format
-        or dataset in {"hmr4d", "gvhmr", "kungfu_athlete"}
-    )
-    if hmr_global_orient:
+    if smpl_like:
         if motion.up_axis == "Z":
             bind_local_quat[root_idx] = rotate_y_up_to_z_up_quaternions(
                 bind_local_quat[root_idx][None, :]

@@ -264,7 +264,10 @@ class FeetStabilizer:
         """
         cfg = self._config
         corrections = np.zeros(effectors.shape[0], dtype=np.float32)
-        if cfg.ground_contact_z <= 0.0 or not self._foot_indices:
+        # ``ground_contact_z < 0`` disables; ``0.0`` is a valid ground plane
+        # (robot.yaml / scaffold default).  The old ``<= 0`` check silently
+        # turned off anti-float for every scaffolded robot.
+        if cfg.ground_contact_z < 0.0 or not self._foot_indices:
             return corrections
 
         ref_h = cfg.ground_contact_z

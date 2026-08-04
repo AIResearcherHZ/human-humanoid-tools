@@ -220,6 +220,57 @@ def human_source_floor_z_world(motion: "Motion") -> float:
     return clip_floor_z_in_positions(np.asarray(motion.positions, dtype=np.float32))
 
 
+def motion_has_upright_stance(
+    motion: "Motion",
+    *,
+    min_pelvis_above_foot_m: float = 0.25,
+) -> bool:
+    """True when any frame has the pelvis clearly above the foot contacts.
+
+    Used to distinguish fully prone / crawl clips from lie→stand transitions
+    (e.g. AMASS lie-to-crouch) where a fingertip floor would elevate standing
+    foot targets.
+    """
+
+    names = tuple(motion.hierarchy.bone_names)
+    pos = np.asarray(motion.positions, dtype=np.float32)
+    if pos.ndim != 3 or pos.shape[0] == 0:
+        return False
+
+    name_to_i = {str(n).lower(): i for i, n in enumerate(names)}
+    pelvis_i = None
+    for key in ("pelvis", "hips", "hip", "root"):
+        if key in name_to_i:
+            pelvis_i = name_to_i[key]
+            break
+    if pelvis_i is None:
+        return False
+
+    foot_i = preferred_floor_contact_bone_indices(names)
+    if foot_i.size == 0:
+        return False
+
+    pelvis_z = pos[:, pelvis_i, 2]
+    foot_z = pos[:, foot_i, 2].min(axis=1)
+    return bool(np.any(pelvis_z - foot_z >= float(min_pelvis_above_foot_m)))
+
+
+def retarget_source_floor_z_world(motion: "Motion") -> float:
+    """Floor Z used to normalize a clip before IK / yellow overlay scale.
+
+    * Clips with upright stance frames → **foot** floor, so hand/finger contact
+      during a prior lie-down does not float the standing feet.
+    * Fully prone / crawl clips (no upright frame) → all-joint min, so body
+      contact still reaches ``z=0``.
+    """
+
+    names = tuple(motion.hierarchy.bone_names)
+    pos = np.asarray(motion.positions, dtype=np.float32)
+    if motion_has_upright_stance(motion):
+        return float(foot_floor_z_in_positions(pos, names))
+    return float(human_source_floor_z_world(motion))
+
+
 def terrain_heightfield_z_offset_world(motion: "Motion", z_human_floor_m: float) -> float:
     """``z_offset`` for :meth:`TerrainHeightfield.scaled` when split grounding is on.
 
@@ -247,8 +298,10 @@ __all__ = [
     "foot_contact_bone_indices",
     "foot_floor_z_in_positions",
     "human_source_floor_z_world",
+    "motion_has_upright_stance",
     "parc_ms_shares_human_terrain_z",
     "preferred_floor_contact_bone_indices",
+    "retarget_source_floor_z_world",
     "terrain_heightfield_z_offset_world",
     "use_split_terrain_grounding",
 ]

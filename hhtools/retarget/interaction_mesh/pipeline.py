@@ -565,7 +565,16 @@ class InteractionMeshPipeline:
         all_pos = np.asarray(motion.positions, dtype=np.float32).copy()
         all_quat = np.asarray(motion.quaternions, dtype=np.float32).copy()
 
-        z_min = float(human_source_floor_z_world(motion))
+        # Terrain / object clips must keep the historical all-joint floor so
+        # the heightfield ``z_offset`` and Laplacian anchors stay co-aligned
+        # with the human.  Flat-ground lie→stand uses
+        # :func:`retarget_source_floor_z_world` in Newton instead.
+        if motion.terrain is not None or motion.objects:
+            z_min = float(human_source_floor_z_world(motion))
+        else:
+            from hhtools.core.grounding import retarget_source_floor_z_world
+
+            z_min = float(retarget_source_floor_z_world(motion))
         robot_height = float(self.scaler.config.model_height)
         smpl_scale = float(self.scaler.trajectory_scale)
         human_height = float(self.scaler.human_height)

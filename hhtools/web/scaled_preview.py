@@ -12,7 +12,10 @@ from typing import Any
 
 import numpy as np
 
-from hhtools.core.grounding import human_source_floor_z_world
+from hhtools.core.grounding import (
+    human_source_floor_z_world,
+    retarget_source_floor_z_world,
+)
 from hhtools.core.motion import Motion
 from hhtools.viewer.anatomy import (
     exclude_joint_from_compact_scaled_preview,
@@ -299,7 +302,13 @@ def _uniform_scaled_joint_positions(
             scaler_cfg, human_height, motion, ik_map_keys=ik_canons,
         )
     )
-    z_min = float(human_source_floor_z_world(motion))
+    # Flat ground: match Newton ``_floor_normalize_motion`` (foot floor when
+    # upright stance exists).  Terrain/object clips keep the all-joint floor
+    # so the yellow overlay stays co-aligned with scaled scene geometry.
+    if motion_has_interaction_scene(motion):
+        z_min = float(human_source_floor_z_world(motion))
+    else:
+        z_min = float(retarget_source_floor_z_world(motion))
     src_pos = np.asarray(motion.positions, dtype=np.float32).copy()
     src_pos[:, :, 2] -= z_min
     src_pos *= ratio

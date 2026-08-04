@@ -694,17 +694,25 @@ class NewtonBasicPipeline:
 
     @staticmethod
     def _floor_normalize_motion(motion: Motion) -> Motion:
-        """Subtract the clip foot-floor so IK targets match the yellow overlay.
+        """Subtract the retarget source floor so IK targets match the overlay.
 
-        Interaction-mesh retarget already does this; Newton basic relied on
-        calibration ``root_z_offset`` alone, which leaves prone frames below
-        ``z=0`` when the clip's lowest foot contact is not at frame 0.
+        Uses :func:`~hhtools.core.grounding.retarget_source_floor_z_world` so
+        lie→stand clips (fingertips below feet while lying) do not elevate
+        standing foot targets.  Fully prone clips still snap on the all-joint
+        minimum.  Terrain/object clips keep the all-joint floor so they stay
+        co-aligned with heightfield / prop geometry.
         """
         from dataclasses import replace
 
-        from hhtools.core.grounding import human_source_floor_z_world
+        from hhtools.core.grounding import (
+            human_source_floor_z_world,
+            retarget_source_floor_z_world,
+        )
 
-        z_min = float(human_source_floor_z_world(motion))
+        if motion.terrain is not None or motion.objects:
+            z_min = float(human_source_floor_z_world(motion))
+        else:
+            z_min = float(retarget_source_floor_z_world(motion))
         if abs(z_min) < 1e-6:
             return motion
         pos = np.asarray(motion.positions, dtype=np.float32).copy()
