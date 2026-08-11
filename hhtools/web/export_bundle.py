@@ -73,6 +73,9 @@ OBJECT_CSV_HEADER = (
     "quat_y",
     "quat_z",
     "quat_w",
+    "ext_x",
+    "ext_y",
+    "ext_z",
 )
 
 
@@ -297,8 +300,7 @@ def _save_object_track_csv(
     num_frames = int(positions.shape[0])
     times = np.arange(num_frames, dtype=np.float64) / max(sample_rate, 1.0)
 
-    # ``ext_*`` cuboid dimensions are intentionally not written: consumers read
-    # the object geometry from the sidecar ``.obj`` mesh instead.
+    extents = np.asarray(blob.get("extents", (0.0, 0.0, 0.0)), dtype=np.float64).reshape(3)
     header_meta = {
         "object": str(blob["name"]),
         "sample_rate": f"{sample_rate:.6f}",
@@ -325,6 +327,9 @@ def _save_object_track_csv(
                 f"{q[2]:.6f}",
                 f"{q[3]:.6f}",
                 f"{q[0]:.6f}",
+                f"{extents[0]:.6f}",
+                f"{extents[1]:.6f}",
+                f"{extents[2]:.6f}",
             ])
     return path
 
