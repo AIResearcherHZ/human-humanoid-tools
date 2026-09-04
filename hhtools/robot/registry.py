@@ -349,11 +349,18 @@ def _load_preset(yaml_path: Path, enclosing_dir: Path) -> RobotPreset:
     length_scale = float(data.get("length_scale") or 1.0)
     up_axis = str(data.get("up_axis") or "Z").upper()
     forward_axis = str(data.get("forward_axis") or "X").upper()
+    floating_raw = data.get("floating_base")
+    base_type = str(data.get("base_type") or "").strip().lower()
+    if floating_raw is None and base_type:
+        floating_base = base_type not in {"fixed", "static", "anchored"}
+    else:
+        floating_base = bool(True if floating_raw is None else floating_raw)
 
     known_keys = {
         "name", "display_name", "urdf", "mesh_search_paths", "ik_map",
         "weights", "rest_offsets", "smooth_joint_filter_masks", "feet",
         "length_scale", "up_axis", "forward_axis", "dof_order",
+        "floating_base", "base_type",
     }
     meta = {k: v for k, v in data.items() if k not in known_keys}
     # Auto-generated yamls (written by :mod:`hhtools.robot.scaffold`) start
@@ -383,5 +390,6 @@ def _load_preset(yaml_path: Path, enclosing_dir: Path) -> RobotPreset:
         up_axis=up_axis,  # type: ignore[arg-type]
         forward_axis=forward_axis,  # type: ignore[arg-type]
         dof_order=dof_order,
+        floating_base=floating_base,
         meta=meta,
     )

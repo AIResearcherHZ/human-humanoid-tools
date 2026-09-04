@@ -37,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 # Bump when static/ front-end behaviour changes.  Injected into ``index.html``
 # at serve time so collaborators only need to pull + restart (no triple-sync).
-UI_BUILD_ID = "20260827-v89"
+UI_BUILD_ID = "20260904-r185"
 
 # Datasets whose adapters accept ``with_mesh=True`` (SMPL forward → baked vertices).
 # The web UI always requests mesh so AMASS / Motion-X etc. show a real body surface,
@@ -2558,6 +2558,9 @@ def _align_scaled_preview_to_robot_playback(
     idx = trajectory.get("frame_indices") or [0]
     f0 = int(idx[0]) if idx else 0
     root = np.asarray(retargeted.root_trajectory[f0], dtype=np.float64)
+    if root.size < 7:
+        root = np.zeros(7, dtype=np.float64)
+        root[6] = 1.0
     mesh_lift = float(frames[0].get("mesh_z_lift") or 0.0)
     ret_dof_names = list(retargeted.dof_names)
     dof0 = np.asarray(retargeted.dof_trajectory[f0], dtype=np.float64)

@@ -19,6 +19,7 @@ mesh_search_paths:
 length_scale: 1.0
 up_axis: Z
 forward_axis: X
+floating_base: true
 
 # CSV export / retarget joint order.  List every actuated revolute joint in
 # the order you want downstream controllers to consume.  Empty = loader

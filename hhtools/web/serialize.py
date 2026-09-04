@@ -818,6 +818,9 @@ def constant_playback_mesh_z_lift(
     ankle→sole correction, else flat sole→``z=0`` at ``frame_index``.
     """
     root = np.asarray(retargeted.root_trajectory, dtype=np.float32)
+    if root.ndim != 2 or root.shape[1] < 7:
+        root = np.zeros((retargeted.num_frames, 7), dtype=np.float32)
+        root[:, 6] = 1.0
     dof = np.asarray(retargeted.dof_trajectory, dtype=np.float32)
     if root.shape[0] == 0:
         return 0.0
@@ -930,7 +933,10 @@ def serialize_robot_trajectory(
     for flat AMASS-style CSVs but wrong when a ``*_terrain.obj`` stays at the
     retarget frame's absolute elevation.
     """
-    root = np.asarray(retargeted.root_trajectory, dtype=np.float32)  # (F, 7) xyz+xyzw
+    root = np.asarray(retargeted.root_trajectory, dtype=np.float32)
+    if root.ndim != 2 or root.shape[1] < 7:
+        root = np.zeros((retargeted.num_frames, 7), dtype=np.float32)
+        root[:, 6] = 1.0
     dof = np.asarray(retargeted.dof_trajectory, dtype=np.float32)  # (F, D)
     num_frames = root.shape[0]
     idx = _downsample_indices(num_frames, max_frames)

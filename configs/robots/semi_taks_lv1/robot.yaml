@@ -7,6 +7,7 @@ mesh_search_paths:
 length_scale: 1.0
 up_axis: Z
 forward_axis: X
+floating_base: false
 
 # 20 主链关节（含闭链被动关节 waist_pitch/roll、wrist_yaw/pitch）。
 # 侧枝电机关节（arm_long/short_link_motor）与被动连杆（active/aux/bevel_gear/
@@ -89,3 +90,28 @@ retarget:
   num_initialization_frames: 10
   num_stabilization_frames: 5
   apply_feet_stabilizer: false
+  pose_only: true
+  ignore_canonical_joints: [hips, left_hip, right_hip, left_knee, right_knee, left_ankle, right_ankle, left_foot, right_foot]
+
+closed_chain:
+  waist_parallel:
+    roll: waist_roll_joint
+    pitch: waist_pitch_joint
+    motors: [waist_right_motor_joint, waist_left_motor_joint]
+  affine:
+    right_arm_long_link_motor_joint: {source: right_wrist_pitch_joint, scale: 0.8}
+    right_arm_long_link_active_joint: {source: right_wrist_pitch_joint, scale: 0.8}
+    right_arm_long_link_active_aux_joint: {source: right_wrist_pitch_joint, scale: 0.8}
+    right_arm_long_link_bevel_gear_joint: {source: right_wrist_pitch_joint, scale: 0.8}
+    right_arm_short_link_motor_joint: {source: right_wrist_pitch_joint, scale: -0.8}
+    right_arm_short_link_active_joint: {source: right_wrist_pitch_joint, scale: -0.8}
+    right_arm_short_link_active_aux_joint: {source: right_wrist_pitch_joint, scale: -0.8}
+    right_arm_short_link_bevel_gear_joint: {source: right_wrist_pitch_joint, scale: -0.8}
+    left_arm_long_link_motor_joint: {source: left_wrist_pitch_joint, scale: -0.8}
+    left_arm_long_link_active_joint: {source: left_wrist_pitch_joint, scale: -0.8}
+    left_arm_long_link_active_aux_joint: {source: left_wrist_pitch_joint, scale: -0.8}
+    left_arm_long_link_bevel_gear_joint: {source: left_wrist_pitch_joint, scale: -0.8}
+    left_arm_short_link_motor_joint: {source: left_wrist_pitch_joint, scale: 0.8}
+    left_arm_short_link_active_joint: {source: left_wrist_pitch_joint, scale: 0.8}
+    left_arm_short_link_active_aux_joint: {source: left_wrist_pitch_joint, scale: 0.8}
+    left_arm_short_link_bevel_gear_joint: {source: left_wrist_pitch_joint, scale: 0.8}

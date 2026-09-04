@@ -127,7 +127,14 @@ class URDFRobotModel(RobotModel):
         invalidates transforms on update).
         """
         if isinstance(q, dict):
-            cfg = {j.name: float(q.get(j.name, 0.0)) for j in self._actuated}
+            cfg = {
+                j.name: float(q.get(j.name, 0.0))
+                for j in self._joints if j.is_actuated
+            }
+            cfg.update({j.name: float(q[j.name]) for j in self._actuated if j.name in q})
+            from hhtools.robot.closed_chain import apply_closed_chain_configuration
+
+            cfg = apply_closed_chain_configuration(self._preset, cfg)
             self.urdf.update_cfg(cfg)
             return
         arr = np.asarray(q, dtype=float).reshape(-1)
@@ -136,7 +143,11 @@ class URDFRobotModel(RobotModel):
                 f"configuration array has {arr.size} elements but robot "
                 f"has {len(self._actuated)} actuated joints"
             )
-        cfg = {j.name: float(v) for j, v in zip(self._actuated, arr, strict=True)}
+        cfg = {j.name: 0.0 for j in self._joints if j.is_actuated}
+        cfg.update({j.name: float(v) for j, v in zip(self._actuated, arr, strict=True)})
+        from hhtools.robot.closed_chain import apply_closed_chain_configuration
+
+        cfg = apply_closed_chain_configuration(self._preset, cfg)
         self.urdf.update_cfg(cfg)
 
     def write_mjcf(self, path: str | Path | None = None) -> Path:

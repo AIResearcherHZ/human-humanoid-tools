@@ -83,8 +83,7 @@ def save_robot_csv(
     if joint_q.ndim != 2 or joint_q.shape[1] != expected_cols:
         raise ValueError(
             f"joint_q shape {joint_q.shape} does not match robot "
-            f"{robot.preset.name!r}: expected (F, {expected_cols}) for "
-            f"{len(robot.dof_names())} DOFs + 7 root columns"
+            f"{robot.preset.name!r}: expected (F, {expected_cols})"
         )
 
     num_frames = joint_q.shape[0]
@@ -158,8 +157,9 @@ def load_robot_csv(path: str | Path) -> RobotCSV:
             f"{path}: expected first column 'time', got {header[0]!r}"
         )
 
+    dof_start = 8 if len(header) > 1 and header[1] == "root_x" else 1
     dof_names = tuple(
-        col[len("dof_"):] for col in header[8:] if col.startswith("dof_")
+        col[len("dof_"):] for col in header[dof_start:] if col.startswith("dof_")
     )
     n_cols = len(header) - 1
     if not rows:

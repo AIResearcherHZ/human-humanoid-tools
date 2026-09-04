@@ -211,6 +211,20 @@ def _scaled_terrain(source_motion, smpl_scale: float, z_terrain: float):
 
 
 def _robot_pkl_blob(retargeted, joint_q: np.ndarray, sample_rate: float, meta: dict) -> dict[str, object]:
+    root_count = int(getattr(retargeted, "root_coord_count", 7))
+    if root_count < 7:
+        dof_all = list(getattr(retargeted, "dof_names", []) or [])
+        return {
+            "joint_q": np.asarray(joint_q, dtype=np.float32),
+            "dof_names": dof_all,
+            "sample_rate": float(sample_rate),
+            "name": str(getattr(retargeted, "name", "retargeted")),
+            "root_coord_count": root_count,
+            "root_quat_format": "none",
+            "smpl_scale": float(meta.get("smpl_scale", 1.0)),
+            "z_offset": float(meta.get("source_z_min", 0.0)),
+            "meta": {k: str(v) for k, v in meta.items()},
+        }
     joint_q_wxyz = np.empty_like(joint_q)
     joint_q_wxyz[:, :3] = joint_q[:, :3]
     joint_q_wxyz[:, 3] = joint_q[:, 6]
@@ -230,6 +244,7 @@ def _robot_pkl_blob(retargeted, joint_q: np.ndarray, sample_rate: float, meta: d
         "sample_rate": float(sample_rate),
         "name": str(getattr(retargeted, "name", "retargeted")),
         "root_quat_format": "wxyz",
+        "root_coord_count": root_count,
         "smpl_scale": float(meta.get("smpl_scale", 1.0)),
         "z_offset": float(meta.get("source_z_min", 0.0)),
         "meta": {k: str(v) for k, v in meta.items()},

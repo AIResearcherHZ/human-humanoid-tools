@@ -358,6 +358,10 @@ async function waitMotionJob(jobId, onProgress, { uploadFrac = 0 } = {}) {
 const canvas = document.getElementById("three-canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 200);
 camera.position.set(2.6, 1.9, 3.2);
@@ -391,12 +395,21 @@ function smoothOrbitWheel(event) {
 }
 renderer.domElement.addEventListener("wheel", smoothOrbitWheel, { passive: false });
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.35));
-const key = new THREE.DirectionalLight(0xffffff, 1.5);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
 key.position.set(3, 6, 4);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.near = 0.5;
+key.shadow.camera.far = 20;
+key.shadow.camera.left = -5;
+key.shadow.camera.right = 5;
+key.shadow.camera.top = 5;
+key.shadow.camera.bottom = -5;
+key.shadow.bias = -0.0005;
 scene.add(key);
-const fill = new THREE.DirectionalLight(0xffffff, 0.85);
+const fill = new THREE.DirectionalLight(0xffffff, 1.2);
 fill.position.set(-3, 4, -2);
 scene.add(fill);
 
@@ -429,14 +442,14 @@ function buildTerrainMesh(t) {
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geo.setIndex(t.faces.flat());
   geo.computeVertexNormals();
-  return new THREE.Mesh(
+  const terrainMesh = new THREE.Mesh(
     geo,
-    // flatShading keeps stair risers looking like sharp steps instead of
-    // smooth-shaded ramps; the user reported stairs rendering as slopes.
     new THREE.MeshStandardMaterial({
       color: 0x9a9aa0, roughness: 0.95, side: THREE.DoubleSide, flatShading: true,
     })
   );
+  terrainMesh.receiveShadow = true;
+  return terrainMesh;
 }
 
 // Ground grid (in three.js Y-up space, so add outside world).
@@ -456,7 +469,8 @@ window.addEventListener("resize", resize);
 new ResizeObserver(resize).observe(document.getElementById("stage"));
 
 // ----------------------------------------------------------------- render loop
-const clock = new THREE.Clock();
+const timer = new THREE.Timer();
+timer.connect(document);
 const _camFocus = new THREE.Vector3();
 const _defaultCamTarget = new THREE.Vector3(0, 0.9, 0);
 const _defaultCamOffset = new THREE.Vector3(2.6, 1.0, 3.2);
@@ -581,7 +595,8 @@ function applyCalibOrbitLimits({ snapCamera = false } = {}) {
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = clock.getDelta();
+  timer.update();
+  const dt = timer.getDelta();
   player.update(dt);
   // Follow the retargeted robot in world space; pause while the user orbits.
   // On loop wrap the robot teleports (start ≠ end).  Always hard-snap the
@@ -829,6 +844,8 @@ class EnvView {
         color: c, transparent: true, opacity: o.opacity ?? 0.55, roughness: 0.6,
       })
     );
+    box.castShadow = true;
+    box.receiveShadow = true;
     this.group.add(box);
     this.objectMeshes.push(box);
     this.objectTraj.push(o);
@@ -838,9 +855,9 @@ class EnvView {
         `/api/object_glb?token=${token}&index=${i}`,
         (gltf) => {
           const real = gltf.scene;
-          // GLB from /api/object_glb is already centred + scaled on the server.
           real.position.copy(box.position);
           real.quaternion.copy(box.quaternion);
+          real.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
           box.geometry.dispose();
           box.visible = false;
           this.group.add(real);
@@ -913,6 +930,8 @@ class ScaledEnvView {
         color: c, transparent: true, opacity: o.opacity ?? 0.7, roughness: 0.55,
       })
     );
+    box.castShadow = true;
+    box.receiveShadow = true;
     this.group.add(box);
     this.objectMeshes.push(box);
     this.objectTraj.push(o);
@@ -933,6 +952,7 @@ class ScaledEnvView {
           const real = gltf.scene;
           real.position.copy(box.position);
           real.quaternion.copy(box.quaternion);
+          real.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
           box.geometry.dispose();
           box.visible = false;
           this.group.add(real);
@@ -1276,6 +1296,8 @@ class BakedMeshView {
           side: THREE.DoubleSide, flatShading: true,
         })
       );
+      this.mesh.castShadow = true;
+      this.mesh.receiveShadow = true;
       this.group.add(this.mesh);
       this.ready = true;
       this.setFrame(0);
@@ -1549,12 +1571,10 @@ class RobotView {
 }
 
 function applyRobotMaterial(mesh) {
-  // Light brushed-metal look. A bright emissive floor guarantees the robot is
-  // clearly visible even if a mesh still ends up without usable normals.
   const make = () => new THREE.MeshStandardMaterial({
     color: 0xc8ccd4,
     emissive: 0x6b7280,
-    emissiveIntensity: 0.55,
+    emissiveIntensity: 0.45,
     roughness: 0.6,
     metalness: 0.15,
     side: THREE.DoubleSide,
@@ -1565,6 +1585,8 @@ function applyRobotMaterial(mesh) {
   } else {
     mesh.material = make();
   }
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
 }
 
 function mat4Into(flat, out) {

@@ -1,0 +1,123 @@
+robot: semi_taks_lv1
+reference: mocap_bvh
+calibrated_joint_q:
+  head_pitch_joint: 0.0
+  head_roll_joint: 0.0
+  head_yaw_joint: 0.0
+  left_elbow_joint: 0.0
+  left_shoulder_pitch_joint: 0.0
+  left_shoulder_roll_joint: 0.0
+  left_shoulder_yaw_joint: 0.0
+  left_wrist_pitch_joint: 0.0
+  left_wrist_roll_joint: 0.0
+  left_wrist_yaw_joint: 0.0
+  right_elbow_joint: 0.0
+  right_shoulder_pitch_joint: 0.0
+  right_shoulder_roll_joint: 0.0
+  right_shoulder_yaw_joint: 0.0
+  right_wrist_pitch_joint: 0.0
+  right_wrist_roll_joint: 0.0
+  right_wrist_yaw_joint: 0.0
+  waist_pitch_joint: 0.0
+  waist_roll_joint: 0.0
+  waist_yaw_joint: 0.0
+notes: saved from web UI
+derived:
+  robot_root_link: base_link
+  reference_root: Hips
+  scales:
+    chest: 0.26806152417508994
+    head: 0.8297884929804613
+    hips: 1.0
+    left_elbow: 0.4083690601500015
+    left_shoulder: 0.8602036303243948
+    left_wrist: 0.38502036224066416
+    right_elbow: 0.4083692870759958
+    right_shoulder: 0.8602038390980146
+    right_wrist: 0.3850205851310565
+  link_quaternions:
+    chest:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    head:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    hips:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    left_elbow:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    left_shoulder:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    left_wrist:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    right_elbow:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    right_shoulder:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    right_wrist:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+  translation_offsets:
+    chest:
+    - 0.0005135629326105118
+    - 0.0018415759550407529
+    - 1.7365502571919933e-05
+    head:
+    - -0.005725221708416939
+    - -0.036276232451200485
+    - 0.0011593105737119913
+    hips:
+    - 0.0
+    - 0.0
+    - 0.0
+    left_elbow:
+    - 0.19289036095142365
+    - 0.16959531605243683
+    - -0.005526083055883646
+    left_shoulder:
+    - 0.22222398221492767
+    - 0.10569379478693008
+    - 0.01679837703704834
+    left_wrist:
+    - 0.4917656481266022
+    - 0.13361488282680511
+    - -0.019996102899312973
+    right_elbow:
+    - -0.18886318802833557
+    - -0.194379523396492
+    - -0.006845640484243631
+    right_shoulder:
+    - -0.14945191144943237
+    - -0.15790002048015594
+    - 0.01551359798759222
+    right_wrist:
+    - -0.04229430481791496
+    - -0.15698201954364777
+    - -0.021842073649168015
+  _comment: Informational cache of the closed-form scale + offset derivation at save
+    time.  Loader ignores this block and re-derives from calibrated_joint_q so stale
+    caches cannot silently misalign retarget.

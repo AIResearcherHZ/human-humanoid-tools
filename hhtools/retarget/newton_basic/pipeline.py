@@ -548,6 +548,11 @@ class NewtonBasicPipeline:
         self.scaler_config = scaler_config
         self.feet_stabilizer_config = feet_stabilizer_config
         self.config = pipeline_config or PipelineConfig()
+        retarget_meta = robot.preset.meta.get("retarget")
+        self._pose_only_retarget = bool(
+            isinstance(retarget_meta, dict)
+            and retarget_meta.get("pose_only", False)
+        )
         self.human_height = float(human_height)
         self._active_motion_source_format: str = ""
         # Optional explicit source-joint → canonical rename.  When ``None``
@@ -591,7 +596,20 @@ class NewtonBasicPipeline:
                 f"robot preset {self.robot.preset.name!r} has no usable ik_map. "
                 f"warnings: {self.ctx.mapping_warnings}"
             )
-        self.ik_mapping = mapping
+        ignored = set()
+        block = self.robot.preset.meta.get("retarget")
+        if isinstance(block, dict):
+            raw = block.get("ignore_canonical_joints")
+            if isinstance(raw, (list, tuple, set)):
+                ignored.update(str(x) for x in raw)
+        if not bool(getattr(self.robot.preset, "floating_base", True)):
+            ignored.update({"hips", "pelvis", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle", "left_foot", "right_foot"})
+        entries = tuple(e for e in mapping.entries if e.canonical_name not in ignored)
+        if not entries:
+            raise ValueError(
+                f"robot preset {self.robot.preset.name!r} has no usable upper-body ik_map"
+            )
+        self.ik_mapping = IKMapping(entries=entries)
         self._endpoint_entries = tuple(self._build_endpoint_entries())
         if self._endpoint_entries:
             self.ik_mapping = IKMapping(
@@ -804,9 +822,10 @@ class NewtonBasicPipeline:
         if motion.num_frames == 0:
             return RetargetedMotion(
                 name=motion.name,
-                joint_q=np.zeros((0, self.ctx.joint_coord_count), dtype=np.float32),
+                joint_q=np.zeros((0, self.ctx.root_coord_count + self._ndof_actuated), dtype=np.float32),
                 sample_rate=motion.framerate,
                 dof_names=self.robot.dof_names(),
+                root_coord_count=self.ctx.root_coord_count,
                 meta={"robot": self.robot.preset.name},
             )
 
@@ -1022,13 +1041,10 @@ class NewtonBasicPipeline:
         # 5. Hard-clip DOFs to URDF limits.
         # Our clamper works on the actuated-DOF slice (past the 7-coord root).
         root7 = joint_q_all[:, : self.ctx.root_coord_count]
-        dof = joint_q_all[:, self.ctx.root_coord_count :]
-        # Newton may add extra coords past the declared actuated count for
-        # mimic / constrained joints; we only clamp the first N columns
-        # that correspond to the robot's actuated joints.
-        n_clamp = min(dof.shape[1], self._ndof_actuated)
-        if n_clamp > 0:
-            dof[:, :n_clamp] = self.clamper.apply(dof[:, :n_clamp])
+        dof_model = joint_q_all[:, self.ctx.root_coord_count :]
+        dof = dof_model[:, self.ctx.dof_coord_indices]
+        if dof.shape[1] > 0:
+            dof = self.clamper.apply(dof)
 
         # 6. Optional per-frame velocity rate limiter.
         if self.config.max_joint_velocity > 0.0:
@@ -1036,12 +1052,16 @@ class NewtonBasicPipeline:
                 root7=root7, dof=dof, framerate=motion.framerate,
                 source_root_quat=source_root_quat,
             )
+            if self.ctx.root_coord_count >= 7:
+                root7 = joint_q_all[:, : self.ctx.root_coord_count]
+                dof = joint_q_all[:, self.ctx.root_coord_count :]
+            else:
+                dof = joint_q_all
         else:
             joint_q_all = np.concatenate([root7, dof], axis=1)
 
         # 7. Truncate to the CSV-exportable width (root + actuated).
-        csv_width = self.ctx.root_coord_count + self._ndof_actuated
-        joint_q_out = joint_q_all[:, :csv_width].astype(np.float32, copy=False)
+        joint_q_out = np.concatenate([root7, dof], axis=1).astype(np.float32, copy=False)
 
         # 8. Align output heading with source: inverse-rotate the root so
         #    the robot moves in the same direction as the source skeleton.
@@ -1055,7 +1075,7 @@ class NewtonBasicPipeline:
             joint_q_out = self._clamp_solved_foot_lateral(joint_q_out)
 
         clip_floor_snap_m = 0.0
-        if bool(getattr(self.config, "clip_floor_snap", True)):
+        if bool(getattr(self.config, "clip_floor_snap", True)) and self.ctx.root_coord_count >= 7:
             from hhtools.retarget.clip_ground_snap import snap_joint_q_clip_floor
 
             joint_q_out, clip_floor_snap_m = snap_joint_q_clip_floor(
@@ -1309,10 +1329,11 @@ class NewtonBasicPipeline:
         return RetargetedMotion(
             name=m.name,
             joint_q=np.zeros(
-                (0, self.ctx.joint_coord_count), dtype=np.float32
+                (0, self.ctx.root_coord_count + self._ndof_actuated), dtype=np.float32
             ),
             sample_rate=m.framerate,
             dof_names=self.robot.dof_names(),
+            root_coord_count=self.ctx.root_coord_count,
             meta={"robot": self.robot.preset.name},
         )
 
@@ -1546,21 +1567,25 @@ class NewtonBasicPipeline:
         genuine fast rotation (flips) gets clamped.  See :meth:`_rate_limit`.
         """
         root7 = joint_q_all[:, : self.ctx.root_coord_count]
-        dof = joint_q_all[:, self.ctx.root_coord_count :]
-        n_clamp = min(dof.shape[1], self._ndof_actuated)
-        if n_clamp > 0:
-            dof[:, :n_clamp] = self.clamper.apply(dof[:, :n_clamp])
+        dof_model = joint_q_all[:, self.ctx.root_coord_count :]
+        dof = dof_model[:, self.ctx.dof_coord_indices]
+        if dof.shape[1] > 0:
+            dof = self.clamper.apply(dof)
 
         if self.config.max_joint_velocity > 0.0:
             joint_q_all = self._rate_limit(
                 root7=root7, dof=dof, framerate=motion.framerate,
                 source_root_quat=source_root_quat,
             )
+            if self.ctx.root_coord_count >= 7:
+                root7 = joint_q_all[:, : self.ctx.root_coord_count]
+                dof = joint_q_all[:, self.ctx.root_coord_count :]
+            else:
+                dof = joint_q_all
         else:
             joint_q_all = np.concatenate([root7, dof], axis=1)
 
-        csv_width = self.ctx.root_coord_count + self._ndof_actuated
-        jq_out = joint_q_all[:, :csv_width].astype(np.float32, copy=False)
+        jq_out = np.concatenate([root7, dof], axis=1).astype(np.float32, copy=False)
         jq_out = self._align_root_to_source_heading(jq_out)
         jq_out = self._rescale_root_displacement(jq_out)
         if self.config.post_ik_foot_clamps:
@@ -1568,7 +1593,7 @@ class NewtonBasicPipeline:
             jq_out = self._clamp_solved_foot_lateral(jq_out)
 
         clip_floor_snap_m = 0.0
-        if bool(getattr(self.config, "clip_floor_snap", True)):
+        if bool(getattr(self.config, "clip_floor_snap", True)) and self.ctx.root_coord_count >= 7:
             from hhtools.retarget.clip_ground_snap import snap_joint_q_clip_floor
 
             jq_out, clip_floor_snap_m = snap_joint_q_clip_floor(
@@ -1635,6 +1660,8 @@ class NewtonBasicPipeline:
         keeping actuated-joint angles unchanged (they live in joint-local
         frames and are unaffected by a global yaw rotation).
         """
+        if self.ctx.root_coord_count < 7:
+            return joint_q
         inv_q = self._inverse_body_quat()
         if inv_q is None:
             return joint_q
@@ -1651,6 +1678,8 @@ class NewtonBasicPipeline:
         Same idea as :meth:`_align_root_to_source_heading` but for the
         ``(F, M, 7)`` scaled-effector tensor used by the preview skeleton.
         """
+        if self.ctx.root_coord_count < 7:
+            return transforms
         return align_effector_tensor_to_source_heading(
             transforms,
             source_body_quat=np.asarray(self.scaler_config.source_body_quat, dtype=np.float32),
@@ -1674,6 +1703,8 @@ class NewtonBasicPipeline:
         below the ground plane.  Anti-floating still uses ankles only so kneeling
         poses are not pulled downward when feet leave the floor.
         """
+        if self.ctx.root_coord_count < 7:
+            return joint_q
         from hhtools.web.serialize import (
             _ground_contact_zs,
             _lowest_ankle_z,
@@ -1794,6 +1825,8 @@ class NewtonBasicPipeline:
 
     def _clamp_solved_foot_lateral(self, joint_q: NDArray) -> NDArray:
         """Post-IK hip abduction spread when solved foot meshes overlap."""
+        if self.ctx.root_coord_count < 7:
+            return joint_q
         min_clearance = self._resolved_foot_lateral_clearance_m()
         if min_clearance <= 0.0 or joint_q.shape[0] == 0:
             return joint_q
@@ -1958,15 +1991,18 @@ class NewtonBasicPipeline:
         preset = self.robot.preset
         for i, entry in enumerate(entries):
             pos_wp = wp.array(pos_targets_np[i : i + 1], dtype=wp.vec3)
+            t_weight = effective_ik_t_weight(
+                entry.canonical_name, entry.t_weight, preset,
+                robot_model=self.robot,
+            )
+            if self._pose_only_retarget:
+                t_weight = 0.0
             position_objectives.append(
                 ik.IKObjectivePosition(
                     link_index=entry.t_body_index,
                     link_offset=wp.vec3(*entry.t_offset),
                     target_positions=pos_wp,
-                    weight=effective_ik_t_weight(
-                        entry.canonical_name, entry.t_weight, preset,
-                        robot_model=self.robot,
-                    ),
+                    weight=t_weight,
                 )
             )
 
@@ -2062,7 +2098,7 @@ class NewtonBasicPipeline:
         # default is the URDF zero-pose which often has the pelvis at origin;
         # this prevents an aggressive first-frame root drift that otherwise
         # shows up as a single-frame "jump" in the CSV.
-        if pelvis_entry is not None:
+        if pelvis_entry is not None and self.ctx.root_coord_count >= 7:
             jq = joint_q.numpy().copy()
             jq[0, 0:3] = ik_targets[0, pelvis_i, 0:3]
             jq[0, 3:7] = ik_targets[0, pelvis_i, 3:7]
@@ -2193,15 +2229,18 @@ class NewtonBasicPipeline:
 
         for entry in entries:
             pos_wp = wp.zeros(shape=N, dtype=wp.vec3)
+            t_weight = effective_ik_t_weight(
+                entry.canonical_name, entry.t_weight, preset,
+                robot_model=self.robot,
+            )
+            if self._pose_only_retarget:
+                t_weight = 0.0
             position_objectives.append(
                 ik.IKObjectivePosition(
                     link_index=entry.t_body_index,
                     link_offset=wp.vec3(*entry.t_offset),
                     target_positions=pos_wp,
-                    weight=effective_ik_t_weight(
-                        entry.canonical_name, entry.t_weight, preset,
-                        robot_model=self.robot,
-                    ),
+                    weight=t_weight,
                 )
             )
 
@@ -2283,7 +2322,7 @@ class NewtonBasicPipeline:
             (e for e in entries if e.canonical_name in ("hips", "pelvis")),
             None,
         )
-        if pelvis_entry is not None:
+        if pelvis_entry is not None and ctx.root_coord_count >= 7:
             jq_np = joint_q.numpy().copy()
             pidx = entries.index(pelvis_entry)
             for env in range(N):
@@ -2428,6 +2467,16 @@ class NewtonBasicPipeline:
         the source itself spins fast — untouched.  Position deltas are left
         alone (a moving subject legitimately translates metres per second).
         """
+        if self.ctx.root_coord_count < 7:
+            out = np.asarray(dof, dtype=np.float32).copy()
+            if out.shape[0] < 2 or self.config.max_joint_velocity <= 0.0:
+                return out
+            max_dq = self.config.max_joint_velocity / max(framerate, 1.0)
+            for frame in range(1, out.shape[0]):
+                out[frame] = out[frame - 1] + np.clip(
+                    out[frame] - out[frame - 1], -max_dq, max_dq,
+                )
+            return out
         dt = 1.0 / max(framerate, 1.0)
         max_dq = self.config.max_joint_velocity * dt
         floor_root = (

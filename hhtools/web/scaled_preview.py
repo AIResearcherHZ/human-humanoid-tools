@@ -323,6 +323,15 @@ def _uniform_scaled_joint_positions(
         )
 
         src_pos = maybe_boost_arm_reach_positions(src_pos, motion, robot_model)
+        if not bool(getattr(robot_model.preset, "floating_base", True)):
+            from hhtools.core.math import quaternion as Q
+
+            body_q = np.asarray(scaler_cfg.source_body_quat, dtype=np.float32)
+            flat_pos = src_pos.reshape(-1, 3)
+            q = np.broadcast_to(body_q[None, :], (flat_pos.shape[0], 4))
+            src_pos = Q.rotate(q, flat_pos).reshape(src_pos.shape).astype(
+                np.float32, copy=False,
+            )
     if abs(z_correction) > 1e-6:
         src_pos[:, :, 2] += np.float32(z_correction)
 

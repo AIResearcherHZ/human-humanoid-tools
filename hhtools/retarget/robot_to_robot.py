@@ -904,6 +904,8 @@ def align_retargeted_ankles_to_scaled_source(
     q = np.asarray(retargeted.joint_q, dtype=np.float32)
     if q.ndim != 2 or q.shape[0] == 0 or q.shape[1] < 3:
         return retargeted
+    if int(getattr(retargeted, "root_coord_count", 7)) < 7:
+        return retargeted
 
     from hhtools.core.grounding import retarget_source_floor_z_world
     from hhtools.retarget.calibration.calibration import uniform_overlay_scale_for_motion

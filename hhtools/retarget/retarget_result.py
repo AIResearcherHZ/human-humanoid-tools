@@ -17,8 +17,8 @@ class RetargetedMotion:
     """Output bundle for a single retargeted clip.
 
     Layout of :attr:`joint_q`: ``(F, root_coord_count + actuated_dof_count)``.
-    The first 7 columns are ``(tx, ty, tz, qx, qy, qz, qw)`` — Newton's
-    floating-base root joint — matching the hhtools CSV schema.
+    Floating-base results start with ``(tx, ty, tz, qx, qy, qz, qw)``;
+    fixed-base results have ``root_coord_count == 0``.
     """
 
     name: str
