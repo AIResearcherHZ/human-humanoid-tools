@@ -1,0 +1,326 @@
+################################################################################
+                                  human-humanoid-tools
+################################################################################
+# 人体动作 → 人形机器人动作重定向工具链（hhtools）。
+# 仓库：https://github.com/AIResearcherHZ/human-humanoid-tools.git
+#
+# 本注释覆盖：
+#   〇、通用（环境/安装/CLI 总览）
+#   一、动作格式转换（BVH/GLB → 统一 NPZ）
+#   二、数据集导入（AMASS/Motion-X/PHUMA/GVHMR/SOMA/LAFAN/Xsens/...）
+#   三、机器人配置（robot.yaml / ik_map / dof_order / 闭链）
+#   四、单文件重定向（hhtools retarget run）
+#   五、批量重定向（mimic / meshmimic / intermimic / r2r）
+#   六、Web UI（标定 + 重定向 + 可视化，推荐工作流）
+#   七、Semi Taks LV1（上半身闭链人形）专项
+#   八、闭链关节换算（waist 平行四连杆 + 手臂锥齿轮）
+
+
+################################################################################
+                          〇、通用（环境/安装/CLI 总览）
+################################################################################
+
+================================================================================
+                                  安装
+================================================================================
+# 需要 Python 3.11+，推荐用 uv 管理环境
+uv sync
+
+# 或用 pip（开发模式）
+pip install -e ".[web]"
+
+# 重依赖（按需手动装）：
+#   newton      —— NVIDIA Newton 物理求解器（IK 后端，按 NVIDIA 文档手动装）
+#   yourdfpy    —— URDF 解析（pip install yourdfpy）
+#   mujoco      —— MJCF 编译 / sim2sim（pip install mujoco）
+#   warp-lang   —— GPU IK 内核（Newton 后端依赖）
+
+================================================================================
+                                CLI 总览
+================================================================================
+hhtools --help
+
+# 子命令：
+#   convert    BVH/GLB → 统一 NPZ
+#   import     公开数据集 → 统一 NPZ
+#   retarget   NPZ → 机器人 CSV（Newton IK / interaction-mesh）
+#   robot      机器人预设管理（list/info/validate/scaffold/add/schema）
+#   web        启动 Web UI（标定 + 重定向 + 可视化）
+
+# 所有命令都可用 --help 看完整参数，例如：
+hhtools retarget run --help
+hhtools robot validate --help
+
+
+################################################################################
+                  一、动作格式转换（BVH/GLB → 统一 NPZ）
+################################################################################
+
+================================================================================
+                          单文件 / 整目录转换
+================================================================================
+# BVH（--unit cm 为源单位；--fps 重采样；-r 递归）
+hhtools convert run assets/motions/mimic/LAFAN/dance1_subject2.bvh \
+  --out assets/save_npz --unit cm --fps 30
+
+hhtools convert run assets/motions/mimic/Xsens_mocap/ \
+  --out assets/save_npz --unit m --fps 30 --overwrite
+
+# GLB / GLTF（自带骨骼的动画文件）
+hhtools convert run some.glb --out assets/save_npz
+
+# 生成参考姿态 BVH（给 LAFAN/mocap 这类没有内置 T-pose 的格式用）
+python scripts/make_reference_pose_bvh.py \
+  --clip assets/motions/mimic/LAFAN/dance1_subject2.bvh \
+  --out assets/reference_poses/lafan_zero_frame0.bvh
+
+
+################################################################################
+              二、数据集导入（AMASS/Motion-X/PHUMA/GVHMR/SOMA/...）
+################################################################################
+
+================================================================================
+                          查看已注册数据集
+================================================================================
+hhtools import list
+
+================================================================================
+                          导入数据集到统一 NPZ
+================================================================================
+# AMASS（SMPL-H，*.npz；参考姿态 smpl）
+hhtools import run --dataset amass \
+  --root /path/to/AMASS \
+  --out assets/save_npz/amass
+
+# Motion-X（SMPL-X）
+hhtools import run --dataset motion_x \
+  --root /path/to/Motion-X \
+  --out assets/save_npz/motion_x
+
+# PHUMA / GVHMR / SOMA / LAFAN / Xsens 同理，--dataset 换名字即可
+# --sequence 只导单个序列（调试用）
+
+# 注意：AMASS 的 SMPL+H 权重与 npz 数据集体积大，未随仓库上传，
+# 需自行从 AMASS 官方下载后用上面的命令导入。
+
+
+################################################################################
+              三、机器人配置（robot.yaml / ik_map / dof_order / 闭链）
+################################################################################
+
+================================================================================
+                          添加新机器人（自动生成 yaml）
+================================================================================
+# 方式一：从 URDF + mesh 目录自动生成预设
+hhtools robot add /path/to/robot.urdf --name my_robot
+
+# 方式二：把 URDF + meshes/ 放进 configs/robots/<name>/，再 scaffold
+hhtools robot scaffold my_robot --force
+
+# scaffold 会自动推断 dof_order + ik_map，但闭链/特殊结构需手动编辑 robot.yaml
+
+================================================================================
+                          查看与验证机器人
+================================================================================
+hhtools robot list
+hhtools robot info semi_taks_lv1 --mjcf
+hhtools robot validate semi_taks_lv1
+hhtools robot schema semi_taks_lv1 --out /tmp/header.csv
+
+================================================================================
+                          robot.yaml 关键字段
+================================================================================
+# urdf              URDF 文件名（相对 robot.yaml）
+# mesh_search_paths mesh 搜索路径（通常 ["meshes"]）
+# dof_order         CSV 导出关节顺序；闭链被动关节（由约束驱动）也可列入，
+#                   侧枝电机/被动连杆不列入（下游用闭链约束换算）
+# ik_map            人体标准关节 → URDF link 映射
+#                   3-DOF 肩/髋 gimbal：映射到中间的 roll_link（不是 pitch/yaw 端）
+# weights           IK 平移/旋转权重（t_weight / r_weight）
+# smooth_joint_filter_masks  冗余 gimbal DOF 平滑掩码（yaw/pitch≈0.1, roll≈1.0）
+# feet              足部接触 link + 地面高度；移动底座用 ground_contact_links
+# retarget          管线参数（初始化帧数、稳定帧数、足部稳定器开关）
+
+
+################################################################################
+                  四、单文件重定向（hhtools retarget run）
+================================================================================
+
+# Newton IK 后端（默认；需要 newton + warp）
+hhtools retarget run assets/save_npz/dance.npz \
+  --robot semi_taks_lv1 \
+  --output out/dance.csv \
+  --calibration-reference smpl \
+  --human-height 1.7 \
+  --ik-iterations 24
+
+# 整目录（输出到目录，每个输入一个 CSV）
+hhtools retarget run assets/save_npz/ \
+  --robot semi_taks_lv1 \
+  --output out/ \
+  --calibration-reference smpl
+
+# 关键参数：
+#   --calibration-reference  smpl|smplx|soma_bvh|lafan_bvh|mocap_bvh|xsens_mocap|glb
+#                            （必须先在 Web UI 标定过对应参考姿态）
+#   --feet-stabilizer        启用足部接地/种植约束（有腿机器人用）
+#   --max-joint-velocity     限速（rad/s），0 关闭
+#   --limit-frames N         只转前 N 帧（冒烟测试）
+
+================================================================================
+                  interaction-mesh 后端（接触/拉普拉斯，用于 meshmimic）
+================================================================================
+# 预计算拉普拉斯（一次性，可复用）
+hhtools retarget interaction-mesh precompute-laplacian \
+  assets/save_npz/parkour.npz \
+  --robot semi_taks_lv1 \
+  --output out/parkour_lap.npz
+
+# 运行
+hhtools retarget interaction-mesh run \
+  assets/save_npz/parkour.npz \
+  --robot semi_taks_lv1 \
+  --output out/parkour.csv
+
+
+################################################################################
+                  五、批量重定向（mimic / meshmimic / intermimic / r2r）
+################################################################################
+
+================================================================================
+                          1. mimic 批量（平地动捕 → Newton IK）
+================================================================================
+# 支持 --dataset: amass|lafan|mocap|soma|xsens_mocap|glb|unified_npz|phuma|motion_x
+python scripts/batch_mimic_retarget.py \
+  --robot semi_taks_lv1 \
+  --in  assets/motions/mimic/LAFAN \
+  --out out/mimic_lv1 \
+  --dataset lafan \
+  --reference lafan_bvh \
+  --skip-existing
+
+================================================================================
+                          2. meshmimic 批量（地形 + interaction-mesh）
+================================================================================
+# --dataset: parc_ms|holosoma|meshmimic_holosoma
+python scripts/batch_meshmimic_retarget.py \
+  --robot semi_taks_lv1 \
+  --in  assets/motions/meshmimic/parc_ms \
+  --out out/meshmimic_lv1 \
+  --dataset parc_ms \
+  --reference smpl
+
+================================================================================
+                          3. intermimic 批量（人-物交互）
+================================================================================
+# --dataset: omomo|omnicontact
+python scripts/batch_intermimic_retarget.py \
+  --robot semi_taks_lv1 \
+  --in  assets/motions/intermimic/OMOMO \
+  --out out/intermimic_lv1 \
+  --dataset omomo \
+  --reference smplx
+
+================================================================================
+                          4. robot→robot 批量（已导出源机器人轨迹 → 目标机器人）
+================================================================================
+# 需要 target 机器人先在 Web UI 存过 R2R 标定
+python scripts/batch_r2r_retarget.py \
+  --source-robot unitree_g1__g1_29dof \
+  --target-robot semi_taks_lv1 \
+  --in  out/g1_csv \
+  --out out/lv1_from_g1 \
+  --profile mimic
+
+
+################################################################################
+                          六、Web UI（标定 + 重定向 + 可视化）
+================================================================================
+
+# 启动（默认 127.0.0.1:8009，自动开浏览器）
+hhtools web
+
+# 自定义端口 / 动作库根目录
+hhtools web --host 0.0.0.0 --port 8009 \
+  --source assets/motions \
+  --save-dir assets/save_npz
+
+# Web UI 工作流：
+#   1. 左侧动作库选一个动作 → 预览
+#   2. 选机器人 → 进 Mapping Editor 调 ik_map / weights
+#   3. Calibration：选参考姿态（smpl/soma_bvh/...）→ 拖滑块标定缩放
+#      （每个参考姿态存一个 retarget_calibration_<ref>.yaml）
+#   4. Retarget → 导出 CSV / PKL / NPZ
+#   5. R2R：上传源机器人轨迹 → 选 target → 导出
+
+
+################################################################################
+                  七、Semi Taks LV1（上半身闭链人形）专项
+================================================================================
+
+# 机器人：移动底座 + 腰(3) + 双臂(各7) + 头(3) = 20 主链 DOF
+# 闭链：腰部平行四连杆 + 手臂锥齿轮耦合（详见下一节）
+# 资产位置：configs/robots/semi_taks_lv1/
+#   Semi_Taks_LV1.urdf   主 URDF（40 revolute 关节，20 主链 + 20 闭链被动/侧枝）
+#   Semi_Taks_LV1.xml    MuJoCo MJCF（含 equality 闭链约束）
+#   meshes/              45 个 STL
+#   robot.yaml           重定向配置（dof_order 20 个主链关节）
+#   tools/               闭链 IK / 惯量计算 / URDF 生成等工具脚本
+
+# 验证
+hhtools robot validate semi_taks_lv1
+hhtools robot info semi_taks_lv1 --mjcf
+
+# 重定向（需先在 Web UI 标定 smpl 或 soma_bvh 参考姿态）
+hhtools retarget run assets/save_npz/wave.npz \
+  --robot semi_taks_lv1 \
+  --output out/wave_lv1.csv \
+  --calibration-reference smpl
+
+# 注意：LV1 无腿，feet_stabilizer 关闭（robot.yaml 已设 apply_feet_stabilizer: false）；
+#       ground_contact_links 用 base_link（移动底座接地）。
+
+
+################################################################################
+          八、闭链关节换算（waist 平行四连杆 + 手臂锥齿轮）
+================================================================================
+
+# LV1 有两类闭链，URDF 里全是独立 revolute 关节，MuJoCo 用 <equality> 约束闭环。
+# hhtools 重定向只解主链 20 个 DOF；侧枝电机角度由下游控制器按闭链关系换算。
+
+# ── 腰部平行四连杆 ──
+#   waist_right_motor_joint / waist_left_motor_joint 是电机，
+#   waist_right/left_link_driven_joint 是被动连杆，
+#   由 MJCF <connect> 约束 waist_*_parallel_loop 闭环。
+#   换算：用 tools/waist_closed_chain_ik.py（MuJoCo least_squares 求解）
+python configs/robots/semi_taks_lv1/tools/waist_closed_chain_ik.py
+#   （读 Semi_Taks_LV1.xml，输入 waist_pitch/roll，输出 motor 关节角）
+
+# ── 手臂锥齿轮耦合 ──
+#   right/left_arm_long_link_motor_joint  = +0.8 × right/left_wrist_pitch_joint
+#   right/left_arm_short_link_motor_joint = -0.8 × right/left_wrist_pitch_joint
+#   （来自 MJCF equality <joint polycoef="0 ±0.8 0 0 0">）
+#   long/short_link_active / aux / bevel_gear 是被动连杆，由 <connect> 闭环。
+#
+#   即：拿到重定向输出的 wrist_pitch 后，乘 ±0.8 即得两个侧枝电机指令。
+
+# ── dof_order 里为什么列了 wrist_yaw / wrist_pitch（它们在 MJCF 有 range）──
+#   它们在主链上（wrist_roll → wrist_yaw → wrist_pitch → 末端），是 IK 要解的；
+#   long/short_link_motor 是侧枝（不在到手的主链上），所以不在 dof_order。
+
+# ── 腰部 motor 关节为什么不在 dof_order ──
+#   waist_right/left_motor_joint 是侧枝电机（平行四连杆的驱动端），
+#   主链是 waist_yaw → waist_pitch → waist_roll → 上身；
+#   motor 角度由闭链换算得到，不直接参与 IK。
+
+
+################################################################################
+                          附：从 retargeting 仓库合并的改动
+################################################################################
+# 2026-09-04 以 hht 为主基线三方合并 retargeting（merge-base 805b84b）：
+#   - hhtools/robot/mobile_base.py      移动底座 + URDF <mimic joint> 闭链
+#   - hhtools/retarget/clip_ground_snap.py  地面吸附
+#   - hhtools/io/mocap_parkour_import.py    mocap 导入
+#   - scripts/batch_*_retarget.py           批量重定向脚本
+#   - AMASS SMPL-H 兼容、mocap_bvh 参考姿态、人体骨架别名扩展
+#   - configs/robots/semi_taks_lv1/         LV1 机器人预设 + 资产
