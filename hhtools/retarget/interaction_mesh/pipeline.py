@@ -1674,6 +1674,17 @@ class InteractionMeshPipeline:
             robot_model=self.robot,
         )
 
+        from hhtools.robot.mobile_base import apply_mobile_base_kinematics
+
+        joint_q, mobile_base_meta = apply_mobile_base_kinematics(
+            self.robot,
+            joint_q,
+            sample_rate=float(motion.framerate),
+            root_coord_count=7,
+            dof_names=dof_names,
+        )
+        _meta_r.update(mobile_base_meta)
+
         return RetargetedMotion(
             name=motion.name or "interaction_mesh",
             joint_q=joint_q,

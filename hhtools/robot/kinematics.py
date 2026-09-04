@@ -264,6 +264,22 @@ def _is_sensor_link(link_name: str) -> bool:
     )
 
 
+def _is_planar_base_helper(link_name: str) -> bool:
+    """True for synthetic links that expose planar-base scalar joints.
+
+    MJCF-to-URDF conversions commonly expand a planar mobile base into a chain
+    such as ``world -> base_x_link -> base_y_link -> chassis``.  Those links
+    are motion-coordinate helpers at ground level, not the robot's anatomical
+    pelvis, even though their names contain the otherwise useful ``base`` and
+    ``link`` tokens.
+    """
+
+    tokens = _tokenise(link_name.lower())
+    return bool(tokens & {"base", "root"}) and "link" in tokens and bool(
+        tokens & {"x", "y", "z", "yaw", "roll", "pitch"}
+    )
+
+
 def _is_end_effector_link(link_name: str) -> bool:
     lower = link_name.lower()
     return (
@@ -715,11 +731,20 @@ def _pick_head_neck(km: KinematicModel, trunk: str | None) -> tuple[str | None, 
 
 
 def _pick_hips(km: KinematicModel) -> str | None:
+    # Search all links for exact anatomical conventions before considering
+    # fuzzy token matches.  URDF converters often place ``base_x_link`` ahead
+    # of the real ``base_link`` in document order; a one-pass search therefore
+    # used to pick the planar helper and inflate every root-relative scale.
+    by_lower = {name.lower(): name for name in km.all_links}
+    for exact in ("pelvis", "hips", "base_link", "root_link"):
+        if exact in by_lower:
+            return by_lower[exact]
+
     for name in km.all_links:
         lower = name.lower()
-        if lower in {"pelvis", "base_link", "hips", "root_link"}:
-            return name
         tokens = _tokenise(lower)
+        if _is_planar_base_helper(name):
+            continue
         if "pelvis" in tokens or (tokens & {"base", "root"} and "link" in tokens):
             return name
     return km.base_link or None
@@ -819,6 +844,17 @@ def _validate_slot_link(
         issues.append(
             IkMapIssue(slot, f"→ {link!r} looks like a limb link, not trunk")
         )
+
+    if slot == "hips" and _is_planar_base_helper(link):
+        preferred = _pick_hips(km)
+        if preferred and preferred != link:
+            issues.append(
+                IkMapIssue(
+                    slot,
+                    f"→ {link!r} looks like a planar-base coordinate helper; "
+                    f"map the anatomical root to {preferred!r}",
+                )
+            )
 
     if slot == "head":
         if _is_end_effector_link(link) or km.side(link):

@@ -106,7 +106,7 @@ def test_scaled_overlay_preserves_foot_terrain_gap() -> None:
     src_gap = float(motion.positions[0, foot_i, 2] - motion.terrain.hf[0, 0])
 
     cfg = ScalerConfig(
-        model_height=1.7,
+        model_height=1.32,
         human_height_assumption=1.65,
         root_joint="pelvis",
         joint_scales={"pelvis": 1.0},

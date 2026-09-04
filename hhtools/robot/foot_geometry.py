@@ -53,6 +53,54 @@ def _foot_contact_links(model: "URDFRobotModel") -> tuple[str | None, str | None
     )
 
 
+def _ground_contact_links(model: "URDFRobotModel") -> tuple[str, ...]:
+    """Return links whose geometry is allowed to define the ground height.
+
+    ``feet`` remains the single robot-preset namespace for contact metadata.
+    Legged robots can keep using ``left_contact_link`` / ``right_contact_link``;
+    mobile bases may instead provide ``ground_contact_links`` (for example the
+    four wheel links).  When no explicit links exist, wheel/caster/roller link
+    names are detected conservatively so common mobile URDFs work without a
+    second, robot-specific code path.
+    """
+    preset = model.preset
+    feet = dict(getattr(preset, "feet", None) or {})
+
+    raw = feet.get("ground_contact_links")
+    if raw is None:
+        # Accept the shorter alias for hand-authored presets while keeping the
+        # documented key explicit about its purpose.
+        raw = feet.get("contact_links")
+    if isinstance(raw, str):
+        raw = [raw]
+    if isinstance(raw, (list, tuple)):
+        links = tuple(dict.fromkeys(
+            text
+            for link in raw
+            if link is not None and (text := str(link).strip())
+        ))
+        if links:
+            return links
+
+    left, right = _foot_contact_links(model)
+    leg_links = tuple(dict.fromkeys(link for link in (left, right) if link))
+    if leg_links:
+        return leg_links
+
+    # A wheel-like fallback is intentionally name-based and only runs when no
+    # foot contacts were configured.  It handles this project's mobile-base
+    # URDFs while avoiding a full-scene mesh scan for arbitrary body links.
+    try:
+        names = model.link_names()
+    except Exception:
+        names = ()
+    wheel_tokens = ("wheel", "caster", "roller")
+    return tuple(
+        name for name in names
+        if any(token in str(name).lower() for token in wheel_tokens)
+    )
+
+
 def _root_transform(root_xyzw: np.ndarray | None) -> np.ndarray:
     from hhtools.web.serialize import _quat_xyzw_to_rotmat
 

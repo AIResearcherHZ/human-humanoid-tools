@@ -24,9 +24,10 @@ Supported rig families (auto-detected in priority order):
 4. **meshmimic / holosoma** — Mixamo-style names with ``LeftFootMod`` /
    ``RightFootMod`` sole markers (same joint rename table as Mixamo/CMU).
 5. **Mixamo / CMU / LAFAN BVH** — TitleCase ``Hips`` + ``LeftUpLeg``/``LeftLeg`` …
-6. **Prefix-stripped fuzzy match** — e.g. ``b_l_arm`` → ``left_shoulder``
-7. **User-defined YAML overrides** in ``configs/skeleton_presets/alias_maps/``
-8. **Identity** — names forwarded as-is (unknown rigs surface a clear ``KeyError``)
+6. **Biomechanical ``b_*`` GLB** — resolves distinct scapula/arm and spine chains.
+7. **Prefix-stripped fuzzy match** — e.g. ``b_l_arm`` → ``left_shoulder``
+8. **User-defined YAML overrides** in ``configs/skeleton_presets/alias_maps/``
+9. **Identity** — names forwarded as-is (unknown rigs surface a clear ``KeyError``)
 """
 
 from __future__ import annotations
@@ -547,6 +548,58 @@ def is_mocap_spine3_bvh_like(joint_names: Iterable[str]) -> bool:
     )
 
 
+def is_biomechanical_b_glb_like(joint_names: Iterable[str]) -> bool:
+    """Detect the ``b_*`` biomechanics GLB skeleton used by mimic assets.
+
+    This rig has separate scapula/shoulder and upper-arm nodes plus four spine
+    segments.  Generic fuzzy aliases collapse both nodes in each pair onto one
+    canonical slot, making calibration depend on source insertion order.
+    """
+    names = set(joint_names)
+    required = {
+        "b_root",
+        "b_spine0", "b_spine1", "b_spine2", "b_spine3",
+        "b_l_shoulder", "b_l_arm", "b_l_forearm", "b_l_wrist",
+        "b_r_shoulder", "b_r_arm", "b_r_forearm", "b_r_wrist",
+    }
+    return required.issubset(names)
+
+
+def _biomechanical_b_source_to_canonical(
+    joint_names: tuple[str, ...],
+) -> dict[str, str]:
+    """Unique anatomical aliases for the biomechanics ``b_*`` hierarchy."""
+    out: dict[str, str] = {}
+    for name in joint_names:
+        norm = _normalise_joint_name(name)
+        out[name] = _NORMALISED_FRAGMENTS.get(norm, name)
+
+    # Only one source drives each canonical consumed by IK.  Shoulder nodes are
+    # scapula/clavicle pivots; the child arm nodes are the glenohumeral joints.
+    overrides = {
+        "b_root": "hips",
+        "b_spine0": "b_spine0",
+        "b_spine1": "spine",
+        "b_spine2": "b_spine2",
+        "b_spine3": "chest",
+        "b_l_shoulder": "left_collar",
+        "b_l_arm": "left_shoulder",
+        "b_r_shoulder": "right_collar",
+        "b_r_arm": "right_shoulder",
+        "b_l_talocrural": "left_ankle",
+        "b_r_talocrural": "right_ankle",
+        "b_l_ball": "left_foot",
+        "b_r_ball": "right_foot",
+        # These are auxiliary visual/twist nodes, not the anatomical ankle.
+        "b_l_foot": "b_l_foot",
+        "b_r_foot": "b_r_foot",
+    }
+    for source, canonical in overrides.items():
+        if source in out:
+            out[source] = canonical
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Fuzzy (prefix-stripped) matching
 # ---------------------------------------------------------------------------
@@ -618,9 +671,10 @@ def auto_source_to_canonical(
     4. Xsens mocap BVH (``Hips`` + ``LeftHip``/``LeftKnee``/``LeftAnkle``).
     5. meshmimic holosoma (``LeftFootMod`` + ``RightFootMod`` + ``Hips``).
     6. Mixamo / CMU / LAFAN (``Hips`` + ``LeftUpLeg``).
-    7. User YAML alias maps (``configs/skeleton_presets/alias_maps/*.yaml``).
-    8. Fuzzy prefix-stripped matching (``b_l_arm`` → ``left_shoulder``).
-    9. Identity (unknown rig — surfaces ``KeyError`` downstream).
+    7. Biomechanical ``b_*`` GLB hierarchy.
+    8. User YAML alias maps (``configs/skeleton_presets/alias_maps/*.yaml``).
+    9. Fuzzy prefix-stripped matching (``b_l_arm`` → ``left_shoulder``).
+    10. Identity (unknown rig — surfaces ``KeyError`` downstream).
     """
     names = tuple(joint_names)
 
@@ -677,6 +731,9 @@ def auto_source_to_canonical(
             return _promote_two_segment_spine_chest(mapping, names)
         result = {n: MIXAMO_CMU_TO_CANONICAL.get(n, n) for n in names}
         return _promote_two_segment_spine_chest(result, names)
+
+    if is_biomechanical_b_glb_like(names):
+        return _biomechanical_b_source_to_canonical(names)
 
     yaml_map = _try_yaml_override(names)
     if yaml_map is not None:
@@ -786,6 +843,8 @@ def list_detected_rig_type(joint_names: Iterable[str]) -> str:
         return "MOCAP BVH (Spine3 chest)"
     if is_mixamo_cmu_like(names):
         return "Mixamo/CMU/LAFAN"
+    if is_biomechanical_b_glb_like(names):
+        return "Biomechanical b_* GLB"
     yaml_map = _try_yaml_override(names)
     if yaml_map is not None:
         return "User YAML alias"
@@ -812,6 +871,7 @@ __all__ = [
     "pack_scaler_rows_to_canonical_targets",
     "invalidate_yaml_cache",
     "is_meshmimic_holosoma_like",
+    "is_biomechanical_b_glb_like",
     "is_mixamo_cmu_like",
     "is_two_segment_mixamo_like",
     "is_mocap_spine3_bvh_like",

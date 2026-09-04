@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """GPU batch-size guards for Newton multi-env IK.
 
-Newton's tiled LM solver allocates one ``DOF × DOF`` Cholesky tile *per IK
-problem*, where ``DOF`` is the **single-robot** dof count.  When
+Newton's tiled LM solver allocates Jacobian/residual tiles plus several
+``DOF × DOF`` workspaces *per IK problem*, where ``DOF`` is the
+**single-robot** dof count.  When
 :meth:`NewtonBasicPipeline.run_batch` passes a single-robot model with
 ``n_problems=N`` (matching soma-retargeter), per-block shared memory is sized
 by one robot's ``DOF`` and is **independent of N** — so N is bounded only by a
@@ -30,8 +31,16 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
-# Newton ``wp.tile_cholesky`` scratch ≈ DOF² × 8 bytes (float32 tiles).
+# Historical estimate retained for callers that only know the DOF count.
 _CHOLESKY_BYTES_PER_DOF_SQ = 8
+
+# Warp 1.12's Newton LM tiled kernel uses these float32 workspaces.  Unlike the
+# old Cholesky-only estimate, this includes the Jacobian/residual tiles, which
+# are large enough to decide whether the kernel can launch on consumer GPUs.
+_LM_DOF_RESIDUAL_BYTES = 4
+_LM_DOF_SQ_BYTES = 12
+_LM_DOF_BYTES = 24
+_LM_FIXED_BYTES = 92
 
 # Soft upper bound on parallel IK problems.  Shared memory no longer scales
 # with N (one tile per problem, sized by single-robot dof), so this cap exists
@@ -44,6 +53,44 @@ def ik_cholesky_smem_bytes(total_dof: int) -> int:
     """Estimated shared-memory bytes for one tiled Cholesky factorization."""
     dof = max(0, int(total_dof))
     return dof * dof * _CHOLESKY_BYTES_PER_DOF_SQ
+
+
+def ik_lm_smem_bytes(total_dof: int, residual_count: int) -> int:
+    """Exact shared-memory footprint of Warp 1.12's tiled Newton LM kernel.
+
+    ``total_dof`` includes the six floating-base DOFs.  Position and rotation
+    objectives contribute three residuals each; joint-limit and smooth-joint
+    objectives each contribute one residual per DOF.
+    """
+    dof = max(0, int(total_dof))
+    residuals = max(0, int(residual_count))
+    return (
+        _LM_DOF_RESIDUAL_BYTES * (dof + 1) * residuals
+        + _LM_DOF_SQ_BYTES * dof * dof
+        + _LM_DOF_BYTES * dof
+        + _LM_FIXED_BYTES
+    )
+
+
+def ik_lm_requires_cpu_fallback(
+    total_dof: int,
+    residual_count: int,
+    *,
+    device_is_cuda: bool,
+    device_smem_limit: int,
+) -> bool:
+    """Whether the LM kernel cannot launch and should be built on CPU.
+
+    CPU and devices with an unknown limit are left unchanged.  The latter is
+    intentional: an unavailable capability query should not unexpectedly
+    force every solve onto CPU.
+    """
+    limit = max(0, int(device_smem_limit))
+    return bool(
+        device_is_cuda
+        and limit > 0
+        and ik_lm_smem_bytes(total_dof, residual_count) > limit
+    )
 
 
 def is_ik_shared_memory_error(err: BaseException) -> bool:

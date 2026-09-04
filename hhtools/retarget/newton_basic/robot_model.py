@@ -290,6 +290,7 @@ def build_newton_model(
     num_envs: int = 1,
     prefer_mjcf: bool = False,
     add_ground_plane: bool = True,
+    device: str | None = None,
 ) -> NewtonRobotContext:
     """Build a :class:`newton.Model` from a :class:`URDFRobotModel`.
 
@@ -308,6 +309,8 @@ def build_newton_model(
             Kept for backwards compatibility of call sites.
         add_ground_plane: Whether to add a ground plane to the builder (useful
             for collision / rendering; unused by the IK objectives we ship).
+        device: Optional Warp device used for all finalized model arrays.
+            ``None`` uses Warp's current device.
     """
     preset = robot.preset
     single_builder = newton.ModelBuilder()
@@ -391,7 +394,7 @@ def build_newton_model(
     if add_ground_plane:
         multi_builder.add_ground_plane()
 
-    model = multi_builder.finalize(requires_grad=True)
+    model = multi_builder.finalize(device=device, requires_grad=True)
 
     # Newton's body_label holds ``env<i>/body_name`` entries; we want the leaf
     # names for the *first* env to resolve ``ik_map`` slots against.  The

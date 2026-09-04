@@ -557,11 +557,6 @@ class NewtonBasicPipeline:
         self.ctx: NewtonRobotContext = build_newton_model(
             robot, num_envs=1
         )
-        if self.ctx.ik_mapping is None or not self.ctx.ik_mapping.entries:
-            raise ValueError(
-                f"robot preset {robot.preset.name!r} has no usable ik_map. "
-                f"warnings: {self.ctx.mapping_warnings}"
-            )
         if robot.preset.urdf_path is not None and robot.preset.ik_map:
             from hhtools.robot.kinematics import require_valid_ik_map
 
@@ -570,22 +565,14 @@ class NewtonBasicPipeline:
                 dict(robot.preset.ik_map),
                 robot_name=robot.preset.name,
             )
-        self.ik_mapping: IKMapping = self.ctx.ik_mapping
-
-        # Auto-add endpoint objectives (toe, hand-end) so the IK solver
-        # tracks the robot's physical extremities, preventing foot
-        # penetration and improving hand reach accuracy.
         self._endpoint_entries: tuple[IKMappingEntry, ...] = ()
-        _extra = self._build_endpoint_entries()
-        if _extra:
-            self._endpoint_entries = tuple(_extra)
-            self.ik_mapping = IKMapping(
-                entries=self.ik_mapping.entries + self._endpoint_entries,
-            )
+        self._install_context_mapping()
+        self._select_ik_device()
+        if self._endpoint_entries:
             _log.info(
                 "Auto-augmented IK with %d endpoint objectives: %s",
-                len(_extra),
-                [e.canonical_name for e in _extra],
+                len(self._endpoint_entries),
+                [e.canonical_name for e in self._endpoint_entries],
             )
 
         # Cache the scaler lazily — we can't build it until we see a source
@@ -595,6 +582,79 @@ class NewtonBasicPipeline:
 
         self.clamper = JointLimitClamper.from_robot(robot)
         self._ndof_actuated = len(robot.actuated_joints)
+
+    def _install_context_mapping(self) -> None:
+        """Install the current model's resolved map and endpoint objectives."""
+        mapping = self.ctx.ik_mapping
+        if mapping is None or not mapping.entries:
+            raise ValueError(
+                f"robot preset {self.robot.preset.name!r} has no usable ik_map. "
+                f"warnings: {self.ctx.mapping_warnings}"
+            )
+        self.ik_mapping = mapping
+        self._endpoint_entries = tuple(self._build_endpoint_entries())
+        if self._endpoint_entries:
+            self.ik_mapping = IKMapping(
+                entries=self.ik_mapping.entries + self._endpoint_entries,
+            )
+
+    def _estimate_lm_residual_count(self) -> int:
+        """Return the residual rows produced by the configured objectives."""
+        dof = int(self.ctx.model.joint_dof_count)
+        residuals = 6 * len(self.ik_mapping.entries)
+        if self.config.joint_limit_weight > 0.0:
+            residuals += dof
+        if self.config.smooth_joint_filter_weight > 0.0:
+            residuals += dof
+        if (
+            self.config.ground_collision_weight > 0.0
+            and self.config.ground_collision_bodies
+        ):
+            from hhtools.retarget.newton_basic.ground_collision_bodies import (
+                resolve_ground_collision_bodies,
+            )
+
+            residuals += len(resolve_ground_collision_bodies(
+                self.ctx.body_labels,
+                list(self.config.ground_collision_bodies),
+            ))
+        return residuals
+
+    def _select_ik_device(self) -> None:
+        """Rebuild on CPU when CUDA cannot launch this model's LM kernel."""
+        from hhtools.retarget.newton_basic.batch_limits import (
+            ik_lm_requires_cpu_fallback,
+            ik_lm_smem_bytes,
+        )
+
+        device = self.ctx.model.device
+        dof = int(self.ctx.model.joint_dof_count)
+        residuals = self._estimate_lm_residual_count()
+        limit = int(getattr(device, "max_shared_memory_per_block", 0) or 0)
+        required = ik_lm_smem_bytes(dof, residuals)
+
+        self._ik_cpu_fallback = ik_lm_requires_cpu_fallback(
+            dof,
+            residuals,
+            device_is_cuda=bool(getattr(device, "is_cuda", False)),
+            device_smem_limit=limit,
+        )
+        if self._ik_cpu_fallback:
+            _log.warning(
+                "Newton LM for robot %r cannot launch on %s: dof=%d, "
+                "residuals=%d, shared memory=%d bytes > %d bytes; using CPU IK",
+                self.robot.preset.name,
+                device,
+                dof,
+                residuals,
+                required,
+                limit,
+            )
+            self.ctx = build_newton_model(
+                self.robot, num_envs=1, device="cpu",
+            )
+            self._install_context_mapping()
+        self._ik_device_name = str(self.ctx.model.device)
 
     @classmethod
     def prewarm_for_robot(
@@ -1015,6 +1075,16 @@ class NewtonBasicPipeline:
             robot_model=self.robot,
         )
 
+        from hhtools.robot.mobile_base import apply_mobile_base_kinematics
+
+        joint_q_out, mobile_base_meta = apply_mobile_base_kinematics(
+            self.robot,
+            joint_q_out,
+            sample_rate=motion.framerate,
+            root_coord_count=self.ctx.root_coord_count,
+            dof_names=self.robot.dof_names(),
+        )
+
         return RetargetedMotion(
             name=motion.name,
             joint_q=joint_q_out,
@@ -1026,8 +1096,11 @@ class NewtonBasicPipeline:
                 "num_mapped_joints": len(self.ik_mapping.entries),
                 "used_mjcf": self.ctx.used_mjcf,
                 "ik_iterations": self.config.ik_iterations,
+                "ik_device": self._ik_device_name,
+                "ik_cpu_fallback": self._ik_cpu_fallback,
                 "human_height": self.human_height,
                 "clip_floor_snap_m": float(clip_floor_snap_m),
+                **mobile_base_meta,
             },
         )
 
@@ -1515,6 +1588,16 @@ class NewtonBasicPipeline:
             robot_model=self.robot,
         )
 
+        from hhtools.robot.mobile_base import apply_mobile_base_kinematics
+
+        jq_out, mobile_base_meta = apply_mobile_base_kinematics(
+            self.robot,
+            jq_out,
+            sample_rate=motion.framerate,
+            root_coord_count=self.ctx.root_coord_count,
+            dof_names=self.robot.dof_names(),
+        )
+
         return RetargetedMotion(
             name=motion.name,
             joint_q=jq_out,
@@ -1526,8 +1609,11 @@ class NewtonBasicPipeline:
                 "num_mapped_joints": len(self.ik_mapping.entries),
                 "used_mjcf": self.ctx.used_mjcf,
                 "ik_iterations": self.config.ik_iterations,
+                "ik_device": self._ik_device_name,
+                "ik_cpu_fallback": self._ik_cpu_fallback,
                 "clip_floor_snap_m": float(clip_floor_snap_m),
                 "human_height": self.human_height,
+                **mobile_base_meta,
             },
         )
 
@@ -1838,7 +1924,7 @@ class NewtonBasicPipeline:
         Used for position-only source data where the quaternion targets are
         meaningless constants.
         """
-        with _warp_ik_guard():
+        with _warp_ik_guard(), wp.ScopedDevice(self.ctx.model.device):
             return self._solve_ik_sequence_inner(
                 ik_targets,
                 progress_callback=progress_callback,
@@ -2078,7 +2164,7 @@ class NewtonBasicPipeline:
         Returns:
             List of ``(F_i, joint_coord_count)`` arrays, one per env.
         """
-        with _warp_ik_guard():
+        with _warp_ik_guard(), wp.ScopedDevice(ctx.model.device):
             return self._solve_ik_batch_inner(
                 ctx,
                 padded_targets,

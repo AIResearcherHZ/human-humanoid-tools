@@ -14,6 +14,8 @@ from __future__ import annotations
 from hhtools.retarget.newton_basic.batch_limits import (
     _MAX_BATCH_ENVS,
     ik_cholesky_smem_bytes,
+    ik_lm_requires_cpu_fallback,
+    ik_lm_smem_bytes,
     is_ik_shared_memory_error,
     max_gpu_batch_envs,
 )
@@ -25,6 +27,28 @@ _CONSUMER_SMEM = 101376
 def test_smem_bytes_scale_with_single_robot_dof() -> None:
     # 35-dof humanoid (G1 29-dof + 6-dof floating base) → 35² × 8.
     assert ik_cholesky_smem_bytes(35) == 35 * 35 * 8
+
+
+def test_lm_smem_includes_jacobian_and_residual_tiles() -> None:
+    # Semi_Taks_LV1_chassis: 57 URDF DOFs + 6 floating-base DOFs, with
+    # 12 mapped effectors and two 63-row regularization objectives.
+    assert ik_lm_smem_bytes(63, 198) == 99_920
+    assert ik_lm_smem_bytes(63, 206) == 101_968
+
+
+def test_lm_device_selection_falls_back_only_for_unsafe_cuda_kernel() -> None:
+    assert ik_lm_requires_cpu_fallback(
+        63, 198, device_is_cuda=True, device_smem_limit=65_536,
+    )
+    assert not ik_lm_requires_cpu_fallback(
+        35, 166, device_is_cuda=True, device_smem_limit=65_536,
+    )
+    assert not ik_lm_requires_cpu_fallback(
+        63, 198, device_is_cuda=False, device_smem_limit=65_536,
+    )
+    assert not ik_lm_requires_cpu_fallback(
+        63, 198, device_is_cuda=True, device_smem_limit=0,
+    )
 
 
 def test_batch_envs_independent_of_n_for_normal_humanoid() -> None:

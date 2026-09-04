@@ -3545,7 +3545,7 @@ async function enterCalibrationMode(initialQ = null) {
   updateCalibBanner(state.reference);
   document.getElementById("calib-banner")?.classList.remove("hidden");
   _applyCalibSceneLayout();
-  toast("已进入标定模式：请对齐蓝色参考骨架");
+  toast("已进入标定模式：对齐姿态与朝向（蓝色骨架保留源尺寸）");
   if (player.active) player.seek(0);
 
   let session;

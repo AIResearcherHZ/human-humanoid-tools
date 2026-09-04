@@ -1,0 +1,259 @@
+{
+  "baseline_tilt_deg": 18.49981344601638,
+  "weights": {
+    "manip": 0.3,
+    "accel": 0.25,
+    "torque": 0.2,
+    "reach": 0.15,
+    "clearance": 0.1
+  },
+  "metrics": {
+    "manip": "manip_p10",
+    "accel": "accel_vol_p10",
+    "torque": "torque_util_p90",
+    "reach": "reach_voxels",
+    "clearance": "clearance_score"
+  },
+  "task_box_shoulder_frame": [
+    [
+      0.05,
+      0.55
+    ],
+    [
+      -0.55,
+      0.15
+    ],
+    [
+      -0.25,
+      0.45
+    ]
+  ],
+  "voxel": 0.05,
+  "rot_scale": 0.25,
+  "clearance_target": 0.02,
+  "settle_steps": 1000,
+  "samples_per_tilt": 256,
+  "rows": [
+    {
+      "tilt_deg": 0.0,
+      "samples": 256,
+      "valid": 221,
+      "unconverged": 35,
+      "manip_p10": 0.00043675801894995926,
+      "manip_mean": 0.0017803530130178651,
+      "accel_vol_p10": 1513186.1181264936,
+      "accel_vol_mean": 9373283.014013551,
+      "torque_util_p90": 4.10179009229616e-09,
+      "reach_voxels": 83.0,
+      "clearance_score": 0.9217240868078329,
+      "clearance_min": -0.0003789298970811039,
+      "log_ratio": {
+        "manip": 0.37210182606867115,
+        "accel": 0.24514379432888592,
+        "torque": 0.06872122626205013,
+        "reach": 0.0368139731227164,
+        "clearance": 0.028009023566453562
+      },
+      "score": 0.19498373998028568
+    },
+    {
+      "tilt_deg": 2.5,
+      "samples": 256,
+      "valid": 219,
+      "unconverged": 37,
+      "manip_p10": 0.00040475109375548164,
+      "manip_mean": 0.0017568691154924026,
+      "accel_vol_p10": 1288894.7183911868,
+      "accel_vol_mean": 9134206.632436145,
+      "torque_util_p90": 4.121111482195519e-09,
+      "reach_voxels": 84.0,
+      "clearance_score": 0.9220846834863946,
+      "clearance_min": -0.00046989429571447916,
+      "log_ratio": {
+        "manip": 0.2959948115724277,
+        "accel": 0.08471139810225027,
+        "torque": 0.06402180835391617,
+        "reach": 0.04879016416943205,
+        "clearance": 0.02840016682270531
+      },
+      "score": 0.13293919597575943
+    },
+    {
+      "tilt_deg": 5.0,
+      "samples": 256,
+      "valid": 217,
+      "unconverged": 39,
+      "manip_p10": 0.00041521820512646255,
+      "manip_mean": 0.0017582023925225094,
+      "accel_vol_p10": 1335201.8527970912,
+      "accel_vol_mean": 9149680.930485802,
+      "torque_util_p90": 4.233899640500192e-09,
+      "reach_voxels": 85.0,
+      "clearance_score": 0.9125938142541647,
+      "clearance_min": -0.0005808207432011214,
+      "log_ratio": {
+        "manip": 0.32152669425356856,
+        "accel": 0.1200088354662918,
+        "torque": 0.037021243367857566,
+        "reach": 0.06062462181643484,
+        "clearance": 0.018053990198313954
+      },
+      "score": 0.14476355810851166
+    },
+    {
+      "tilt_deg": 7.5,
+      "samples": 256,
+      "valid": 215,
+      "unconverged": 41,
+      "manip_p10": 0.00035879322597693697,
+      "manip_mean": 0.001786319548016629,
+      "accel_vol_p10": 1421131.2236588574,
+      "accel_vol_mean": 9320396.19141126,
+      "torque_util_p90": 4.330974780364407e-09,
+      "reach_voxels": 83.0,
+      "clearance_score": 0.9016610751646918,
+      "clearance_min": -0.0006838007183062877,
+      "log_ratio": {
+        "manip": 0.17546876706290737,
+        "accel": 0.18237954529297323,
+        "torque": 0.01435207339979902,
+        "reach": 0.0368139731227164,
+        "clearance": 0.006001801181871199
+      },
+      "score": 0.10722820720866989
+    },
+    {
+      "tilt_deg": 10.0,
+      "samples": 256,
+      "valid": 210,
+      "unconverged": 46,
+      "manip_p10": 0.00034968969724478766,
+      "manip_mean": 0.0018491916705881102,
+      "accel_vol_p10": 1402470.89050365,
+      "accel_vol_mean": 9114644.34643326,
+      "torque_util_p90": 4.393675550242418e-09,
+      "reach_voxels": 83.0,
+      "clearance_score": 0.9178273000885816,
+      "clearance_min": -0.0005310787631251368,
+      "log_ratio": {
+        "manip": 0.14976869865840917,
+        "accel": 0.16916195721186467,
+        "torque": -2.1419401042103978e-05,
+        "reach": 0.0368139731227164,
+        "clearance": 0.023772346542080776
+      },
+      "score": 0.09511614564289604
+    },
+    {
+      "tilt_deg": 12.5,
+      "samples": 256,
+      "valid": 207,
+      "unconverged": 49,
+      "manip_p10": 0.0003353898031744103,
+      "manip_mean": 0.0018617613275285117,
+      "accel_vol_p10": 1413118.752058651,
+      "accel_vol_mean": 8893832.898782257,
+      "torque_util_p90": 5.082673714565501e-09,
+      "reach_voxels": 81.0,
+      "clearance_score": 0.9254033725893996,
+      "clearance_min": -0.0006038990266903632,
+      "log_ratio": {
+        "manip": 0.10801596366192315,
+        "accel": 0.17672549712203525,
+        "torque": -0.1456927323325941,
+        "reach": 0.01242251999855711,
+        "clearance": 0.031992820817584276
+      },
+      "score": 0.052510276994108915
+    },
+    {
+      "tilt_deg": 15.0,
+      "samples": 256,
+      "valid": 206,
+      "unconverged": 50,
+      "manip_p10": 0.0002858300934753049,
+      "manip_mean": 0.0018472590229623152,
+      "accel_vol_p10": 1190877.6512205706,
+      "accel_vol_mean": 8622381.5587342,
+      "torque_util_p90": 4.677183269769267e-09,
+      "reach_voxels": 81.0,
+      "clearance_score": 0.9174904632470551,
+      "clearance_min": -0.00035646462093255615,
+      "log_ratio": {
+        "manip": -0.05187992775309843,
+        "accel": 0.005616911768468869,
+        "torque": -0.062551350737992,
+        "reach": 0.01242251999855711,
+        "clearance": 0.023405285478282925
+      },
+      "score": -0.022466113983798858
+    },
+    {
+      "tilt_deg": 17.5,
+      "samples": 256,
+      "valid": 205,
+      "unconverged": 51,
+      "manip_p10": 0.00031305943026553807,
+      "manip_mean": 0.0018622616062452329,
+      "accel_vol_p10": 1306849.630345357,
+      "accel_vol_mean": 8240182.521271987,
+      "torque_util_p90": 4.32823687705364e-09,
+      "reach_voxels": 82.0,
+      "clearance_score": 0.9048552824420977,
+      "clearance_min": -0.0004490935543919605,
+      "log_ratio": {
+        "manip": 0.03911556228881369,
+        "accel": 0.09854573300207753,
+        "torque": 0.014984441220409785,
+        "reach": 0.024692612590371414,
+        "clearance": 0.009538121894092142
+      },
+      "score": 0.04402569425921037
+    },
+    {
+      "tilt_deg": 18.4998,
+      "samples": 256,
+      "valid": 206,
+      "unconverged": 50,
+      "manip_p10": 0.00030105033698656124,
+      "manip_mean": 0.0018667165270671586,
+      "accel_vol_p10": 1184207.3473180314,
+      "accel_vol_mean": 8232543.319991732,
+      "torque_util_p90": 4.39358144135164e-09,
+      "reach_voxels": 80.0,
+      "clearance_score": 0.8962656918629195,
+      "clearance_min": -0.0005329620173714078,
+      "log_ratio": {
+        "manip": 0.0,
+        "accel": 0.0,
+        "torque": -0.0,
+        "reach": 0.0,
+        "clearance": 0.0
+      },
+      "score": 0.0
+    },
+    {
+      "tilt_deg": 20.0,
+      "samples": 256,
+      "valid": 203,
+      "unconverged": 53,
+      "manip_p10": 0.00030397538614335444,
+      "manip_mean": 0.0018765414713501128,
+      "accel_vol_p10": 1344219.219946363,
+      "accel_vol_mean": 8047866.577377381,
+      "torque_util_p90": 4.499962900066332e-09,
+      "reach_voxels": 79.0,
+      "clearance_score": 0.9010665068622532,
+      "clearance_min": -0.0013029475912709199,
+      "log_ratio": {
+        "manip": 0.009669248213974174,
+        "accel": 0.1267396933257592,
+        "torque": -0.02392443974864527,
+        "reach": -0.012578782206860073,
+        "clearance": 0.005342169266405787
+      },
+      "score": 0.028448209441514563
+    }
+  ],
+  "best_tilt_deg": 0.0
+}

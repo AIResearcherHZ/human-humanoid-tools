@@ -258,7 +258,7 @@
 
         <div class="card" id="calib-card" style="display:none">
           <h3>2 · 标定 Calibration</h3>
-          <p class="hint">标定时舞台只显示<b>灰色机器人</b>与<b>蓝色参考骨架</b>（当前参考格式的标准姿态，不是正在播放的动作，也不一定是 URDF 零位）。请把机器人各关节对齐到蓝色骨架，可在 3D 中点击关节拖动，或用下方滑块微调。</p>
+          <p class="hint">标定时舞台只显示<b>灰色机器人</b>与<b>蓝色参考骨架</b>。蓝色骨架保留当前参考格式的原始尺寸，和机器人大小不同是正常的；此处只需对齐关节姿态与朝向，保存后会按机器人连杆派生比例。</p>
           <div id="calib-sliders" style="margin-top:8px; max-height:240px; overflow-y:auto"></div>
           <div class="divider"></div>
           <div class="row">
@@ -290,7 +290,7 @@
             <b>首次 Retarget 较慢：</b>新机器人第一次求解会编译 GPU/Warp IK 内核并捕获 CUDA 图（约 10–60 秒）。进度条可能短暂不动，属正常现象，请耐心等待；加载机器人后会在后台预热，同一机器人后续会快很多。
           </p>
           <p class="hint" id="rt-tuning-hint" style="margin-top:6px">
-            默认机器人构型比例接近 SMPL。若手臂、肩宽或腿宽与预期不符，可手动编辑 <code>~/.config/hhtools/robots/&lt;name&gt;/robot.yaml</code> 中的 scale（<code>retarget.joint_scale_multipliers</code>）与权重（<code>weights</code>）针对自己的机器人微调；改 yaml 后下次 Retarget 即生效。
+            蓝色标定骨架不读取机器人比例。请用橙色「缩放骨架」检查进入 IK 前的目标；若手臂或肩宽仍不符，再编辑 <code>~/.config/hhtools/robots/&lt;name&gt;/robot.yaml</code> 的 <code>retarget.joint_scale_multipliers</code>。<code>weights</code> 只调节 IK 约束优先级，不会改变骨架大小。修改后重新加载机器人再 Retarget。
           </p>
           <div style="height:8px"></div>
           <button class="btn" id="retarget-btn" disabled>开始 Retarget</button>

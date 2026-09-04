@@ -1,0 +1,91 @@
+name: "semi_taks_lv1"
+display_name: "Semi Taks LV1"
+urdf: "Semi_Taks_LV1.urdf"
+mesh_search_paths:
+  - "meshes"
+
+length_scale: 1.0
+up_axis: Z
+forward_axis: X
+
+# 20 主链关节（含闭链被动关节 waist_pitch/roll、wrist_yaw/pitch）。
+# 侧枝电机关节（arm_long/short_link_motor）与被动连杆（active/aux/bevel_gear/
+# driven）不在主链上，不列入 dof_order；下游控制器用闭链约束换算：
+#   long_link_motor  = +0.8 * wrist_pitch
+#   short_link_motor = -0.8 * wrist_pitch
+#   waist_right_motor / waist_left_motor 由 waist_pitch/roll 经平行四连杆换算
+dof_order:
+  - waist_yaw_joint
+  - waist_pitch_joint
+  - waist_roll_joint
+  - right_shoulder_pitch_joint
+  - right_shoulder_roll_joint
+  - right_shoulder_yaw_joint
+  - right_elbow_joint
+  - right_wrist_roll_joint
+  - right_wrist_yaw_joint
+  - right_wrist_pitch_joint
+  - left_shoulder_pitch_joint
+  - left_shoulder_roll_joint
+  - left_shoulder_yaw_joint
+  - left_elbow_joint
+  - left_wrist_roll_joint
+  - left_wrist_yaw_joint
+  - left_wrist_pitch_joint
+  - head_roll_joint
+  - head_pitch_joint
+  - head_yaw_joint
+
+# 上半身人形（移动底座 + 腰 + 双臂 + 头），无腿/足。
+ik_map:
+  hips:           base_link
+  chest:          waist_roll_link
+  head:           head_yaw_link
+  left_shoulder:  left_shoulder_roll_link
+  left_elbow:     left_elbow_link
+  left_wrist:     left_wrist_pitch_link
+  right_shoulder: right_shoulder_roll_link
+  right_elbow:    right_elbow_link
+  right_wrist:    right_wrist_pitch_link
+
+weights:
+  t_weight:
+    hips: 10.0
+    chest: 0.5
+    left_shoulder: 0.5
+    left_elbow: 1.0
+    left_wrist: 1.0
+    right_shoulder: 0.5
+    right_elbow: 1.0
+    right_wrist: 1.0
+  r_weight:
+    hips: 2.0
+    chest: 0.5
+    left_shoulder: 0.1
+    left_elbow: 0.5
+    left_wrist: 0.5
+    right_shoulder: 0.1
+    right_elbow: 0.5
+    right_wrist: 0.5
+
+smooth_joint_filter_masks:
+  waist_yaw_link: 0.3
+  waist_pitch_link: 0.1
+  right_shoulder_pitch_link: 0.1
+  right_shoulder_roll_link: 1.0
+  right_shoulder_yaw_link: 0.3
+  left_shoulder_pitch_link: 0.1
+  left_shoulder_roll_link: 1.0
+  left_shoulder_yaw_link: 0.3
+
+rest_offsets: {}
+
+feet:
+  ground_contact_links: [base_link]
+  ground_z: 0.0
+  foot_height: 0.0
+
+retarget:
+  num_initialization_frames: 10
+  num_stabilization_frames: 5
+  apply_feet_stabilizer: false

@@ -127,6 +127,9 @@ rest_offsets: {}
 feet:
   left_contact_link: <left_ankle_roll_link>
   right_contact_link: <right_ankle_roll_link>
+  # Mobile bases can use this instead of left/right foot links.  The lowest
+  # mesh/link among these contacts is used by clip floor snap.
+  # ground_contact_links: [wheel_fl, wheel_fr, wheel_rl, wheel_rr]
   ground_z: 0.0
   foot_height: 0.02
 

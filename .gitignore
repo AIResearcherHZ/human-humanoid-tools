@@ -144,6 +144,8 @@ configs/robots/*
 !configs/robots/_template/**
 !configs/robots/unitree_g1/
 !configs/robots/unitree_g1/**
+!configs/robots/semi_taks_lv1/
+!configs/robots/semi_taks_lv1/**
 
 # Large assets (use git-lfs if you need them tracked)
 *.mp4

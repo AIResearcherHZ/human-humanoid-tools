@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 hhtools contributors
 # SPDX-License-Identifier: Apache-2.0
-"""Clip-wide foot floor snap for retargeted trajectories.
+"""Clip-wide ground-contact floor snap for retargeted trajectories.
 
 After Newton IK or Interaction-Mesh MPC, the floating base can sit a few
 centimetres above ``z = 0`` even when the scaled source looks planted: IK
-tracks ankle frames, not sole meshes, and foot geometry differs from the
-human.  :func:`snap_joint_q_clip_floor` applies one global root-Z translation
-so the **lowest foot sole among upright frames** (or all frames if none) sits
-on ``ground_z`` while preserving relative jumps and steps.
+tracks target frames, not sole/wheel meshes, and contact geometry differs from
+the human.  :func:`snap_joint_q_clip_floor` applies one global root-Z
+translation so the **lowest configured ground contact among upright frames**
+(or all frames if none) sits on ``ground_z`` while preserving relative motion.
 
 Lie→stand clips must ignore prone-frame sole penetration when choosing the
 snap reference — otherwise lifting those frames floats the standing feet.
@@ -47,20 +47,26 @@ def _root_transform(root_xyzw: NDArray) -> NDArray[np.float64]:
     return T
 
 
-def _foot_link_parts(robot: "URDFRobotModel") -> list[tuple[str, tuple]]:
+def _ground_contact_parts(robot: "URDFRobotModel") -> list[tuple[str, tuple]]:
     from hhtools.robot.foot_geometry import (
-        _foot_contact_links,
         _foot_mesh_node_parts,
+        _ground_contact_links,
     )
 
-    left, right = _foot_contact_links(robot)
+    links = _ground_contact_links(robot)
+    known_links = set()
+    try:
+        known_links = set(robot.link_names())
+    except Exception:
+        pass
     out: list[tuple[str, tuple]] = []
-    for link in (left, right):
-        if not link:
+    for link in links:
+        if known_links and link not in known_links:
             continue
         parts = _foot_mesh_node_parts(robot, link)
-        if parts:
-            out.append((link, parts))
+        # Keep links without visual meshes: their link origin is still a valid
+        # contact reference for simple URDFs that model wheels as primitives.
+        out.append((link, parts))
     return out
 
 
@@ -68,16 +74,16 @@ def _frame_min_foot_world_z(
     robot: "URDFRobotModel",
     root7: NDArray,
     *,
-    foot_parts: list[tuple[str, tuple]],
+    contact_parts: list[tuple[str, tuple]],
 ) -> float | None:
-    """Lowest foot sole world-Z for the current robot configuration."""
+    """Lowest configured ground-contact world-Z for one robot frame."""
     from hhtools.robot.foot_geometry import _cached_geom_vertices
 
     scene = robot.urdf.scene
     Tw = _root_transform(root7)
     zs: list[float] = []
 
-    for link, parts in foot_parts:
+    for link, parts in contact_parts:
         for node, geom_name in parts:
             v = _cached_geom_vertices(robot, geom_name)
             if v is None:
@@ -107,7 +113,7 @@ def measure_clip_min_foot_world_z(
     upright_only: bool = False,
     upright_root_above_sole_m: float = _UPRIGHT_ROOT_ABOVE_SOLE_M,
 ) -> float | None:
-    """Minimum foot-sole world Z over frames of ``joint_q``.
+    """Minimum configured ground-contact world Z over frames of ``joint_q``.
 
     When ``upright_only`` is true, only frames whose root sits at least
     ``upright_root_above_sole_m`` above the sole are considered.  If no such
@@ -117,10 +123,11 @@ def measure_clip_min_foot_world_z(
     if q.ndim != 2 or q.shape[0] == 0 or q.shape[1] < root_coord_count:
         return None
 
-    foot_parts = _foot_link_parts(robot)
-    if not foot_parts:
+    contact_parts = _ground_contact_parts(robot)
+    if not contact_parts:
         _log.warning(
-            "clip floor snap: robot %r has no foot meshes/links; skip measure",
+            "clip floor snap: robot %r has no configured ground-contact or "
+            "foot links; skip ground-height measure (IK mapping is unaffected)",
             getattr(getattr(robot, "preset", None), "name", "?"),
         )
         return None
@@ -141,7 +148,7 @@ def measure_clip_min_foot_world_z(
             else:
                 robot.apply_configuration(saved)
             z = _frame_min_foot_world_z(
-                robot, q[f, :root_coord_count], foot_parts=foot_parts,
+                robot, q[f, :root_coord_count], contact_parts=contact_parts,
             )
             if z is None:
                 continue
@@ -169,11 +176,11 @@ def snap_joint_q_clip_floor(
     ground_z: float = 0.0,
     z_index: int = 2,
 ) -> tuple[NDArray, float]:
-    """Translate root Z so the reference foot sole sits on ``ground_z``.
+    """Translate root Z so the reference ground contact sits on ``ground_z``.
 
-    Prefers the lowest sole among **upright** frames (root clearly above the
-    feet).  Fully prone clips fall back to the all-frame minimum.  Relative
-    motion (jumps, steps) is preserved — only a constant root-Z shift.
+    Prefers the lowest contact among **upright** frames (root clearly above the
+    contact plane).  Fully prone clips fall back to the all-frame minimum.
+    Relative motion is preserved; only a constant root-Z shift is applied.
 
     Returns ``(joint_q_out, delta_z)`` where ``delta_z`` was subtracted from the
     root height column (``out[:, z_index] = in[:, z_index] - delta_z``).
@@ -195,7 +202,7 @@ def snap_joint_q_clip_floor(
     out = q.astype(np.float32, copy=True)
     out[:, z_index] = out[:, z_index] - np.float32(delta)
     _log.info(
-        "clip floor snap: Δz=%+.4fm so upright min foot sole (was %.4fm) "
+        "clip floor snap: Δz=%+.4fm so upright min ground contact (was %.4fm) "
         "sits on z=%.4fm",
         delta,
         min_z,

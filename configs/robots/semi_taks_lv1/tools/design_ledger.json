@@ -1,0 +1,1479 @@
+{
+  "robot": "Semi_Taks_LV1",
+  "consumers": [
+    "MuJoCo",
+    "urdfdom",
+    "Pinocchio",
+    "RViz"
+  ],
+  "units": {
+    "length": "m",
+    "mass": "kg",
+    "angle": "rad",
+    "mesh": "m"
+  },
+  "frame_map_from_cad": [
+    [
+      0.0,
+      -1.0,
+      0.0
+    ],
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "cad_origin_mm": [
+    0.0,
+    -4.8,
+    -383.3
+  ],
+  "top_assembly_scale": 1.0,
+  "geometry_source": "0826临时版本.step",
+  "dynamics_source": "s5激进单边骨架_materials.json",
+  "topology_source": "Semi_Taks_LV1_STAGE4",
+  "links": {
+    "base_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "meshes": [
+        "meshes/base_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/底座 v5:1/RP70H外形图 V1.0 20260310 v1:1",
+        "/S4eyou腰 v17:1/底座 v5:1/快拆部分总装:1/快拆部分底板:1",
+        "/S4eyou腰 v17:1/底座 v5:1/快拆部分总装:1/70H抱箍:1/70H抱箍（间隙孔）:1",
+        "/S4eyou腰 v17:1/底座 v5:1/快拆部分总装:1/70H抱箍:1/70H抱箍（螺纹孔）:1",
+        "/S4eyou腰 v17:1/底座 v5:1/底板:2"
+      ]
+    },
+    "head_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0047,
+        -0.0002,
+        0.5127999999999999
+      ],
+      "meshes": [
+        "meshes/head_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/1.5模20齿锥齿轮组 v18:1/m1.5000 mm / z16:2",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/yaw轴运动传动:1/头部yaw锥齿轮边固定:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/yaw轴运动传动:1/头部yaw锥齿轮边固定(镜像):1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/yaw轴运动传动:1/J5传动板:2"
+      ]
+    },
+    "head_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0047,
+        -0.0002,
+        0.5127999999999999
+      ],
+      "meshes": [
+        "meshes/head_roll_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/小锥齿轮传动轴间隙孔侧:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/小锥齿轮传动轴螺纹侧:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/8X12X3.5法兰:2",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/8X12X3.5法兰:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮保持架系列:2/中央锥齿轮保持架:1"
+      ]
+    },
+    "head_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0047,
+        -0.0002,
+        0.5528
+      ],
+      "meshes": [
+        "meshes/head_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/J5固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:3",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/J5固定部分:1/J5电机架：40s抱箍 v3:1/40s抱箍（间隙孔）:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/J5固定部分:1/J5电机架：40s抱箍 v3:1/40s抱箍（螺纹孔）:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/相机架立板:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/相机架横板:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/21X6X6四孔M3连接块:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/零部件85:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/相机架立板:2",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/相机运动部分:1/21X6X6四孔M3连接块:2"
+      ]
+    },
+    "left_arm_long_link_active_aux_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        0.155,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/left_arm_long_link_active_aux_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/左长连杆(镜像):1/轴承螺丝(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/左长连杆(镜像):1/轴承螺丝(镜像):3",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/左长连杆(镜像):1/左长连杆长杆(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/左长连杆(镜像):1/左长连杆短杆(镜像):1"
+      ]
+    },
+    "left_arm_long_link_active_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        0.179,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/left_arm_long_link_active_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/右长连杆(镜像)(镜像):1/轴承螺丝(镜像)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/右长连杆(镜像)(镜像):1/轴承螺丝(镜像)(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/右长连杆(镜像)(镜像):1/左长连杆长杆(镜像)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/右长连杆(镜像)(镜像):1/左长连杆短杆(镜像)(镜像):1"
+      ]
+    },
+    "left_arm_long_link_bevel_gear_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        0.167,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/left_arm_long_link_bevel_gear_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/锥齿轮输入(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/1.5模20齿锥齿轮组 v18(镜像):1/带轴承装配(镜像):1/m1.5000 mm / z20(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/1.5模20齿锥齿轮组 v18(镜像):1/带轴承装配(镜像):1/18X12X4轴承(镜像):1"
+      ]
+    },
+    "left_arm_long_link_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        0.167,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/left_arm_long_link_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/长边传动系列(镜像):1/电机输出(镜像):1"
+      ]
+    },
+    "left_arm_short_link_active_aux_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        0.179,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/left_arm_short_link_active_aux_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像):1/左短连杆长杆(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像):1/左短连杆短杆(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像):1/轴承螺丝(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像):1/轴承螺丝(镜像):4"
+      ]
+    },
+    "left_arm_short_link_active_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        0.155,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/left_arm_short_link_active_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像)(镜像):1/左短连杆长杆(镜像)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像)(镜像):1/轴承螺丝(镜像) (1)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像)(镜像):1/轴承螺丝(镜像) (1)(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/左短连杆(镜像)(镜像):1/左短连杆短杆(镜像)(镜像):1"
+      ]
+    },
+    "left_arm_short_link_bevel_gear_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        0.167,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/left_arm_short_link_bevel_gear_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/锥齿轮输入(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/1.5模20齿锥齿轮组 v18(镜像):1/带轴承装配(镜像):2/m1.5000 mm / z20(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/1.5模20齿锥齿轮组 v18(镜像):1/带轴承装配(镜像):2/18X12X4轴承(镜像):1"
+      ]
+    },
+    "left_arm_short_link_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        0.167,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/left_arm_short_link_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/短边传动系列(镜像):1/电机输出(镜像):2"
+      ]
+    },
+    "left_elbow_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0024000000000000002,
+        0.1975,
+        0.17338000000000003
+      ],
+      "meshes": [
+        "meshes/left_elbow_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/零部件791(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/J4主动碳板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/J5固定部分(镜像):1/RP40S行星关节模组_A01 2026.03.24 v2(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/J5固定部分(镜像):1/J5电机架：40s抱箍 v3(镜像):1/40s抱箍（间隙孔）(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/J5固定部分(镜像):1/J5电机架：40s抱箍 v3(镜像):1/40s抱箍（螺纹孔）(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/J5固定部分(镜像):1/J5传动板(镜像):1"
+      ]
+    },
+    "left_shoulder_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0048,
+        0.097855,
+        0.416045
+      ],
+      "meshes": [
+        "meshes/left_shoulder_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J1运动部分 (镜像):1/J1/J3电机架 v2(镜像):3/J1电机架A(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1运动部分 (镜像):1/J1/J3电机架 v2(镜像):3/J1电机架B(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1运动部分 (镜像):1/J1/J3电机架 v2(镜像):3/RP50H(厚度59.5) v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1运动部分 (镜像):1/S5-J1抱箍连接横板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1运动部分 (镜像):1/S5-J1抱箍连接立板(镜像):1"
+      ]
+    },
+    "left_shoulder_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.037200000000000004,
+        0.1469,
+        0.39440000000000003
+      ],
+      "meshes": [
+        "meshes/left_shoulder_roll_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J2运动部分(镜像):1/J1/J3电机架 v2(镜像):4/J1电机架A(镜像):1",
+        "/S5新右臂(镜像):1/S5-J2运动部分(镜像):1/J1/J3电机架 v2(镜像):4/J1电机架B(镜像):1",
+        "/S5新右臂(镜像):1/S5-J2运动部分(镜像):1/J1/J3电机架 v2(镜像):4/RP50H(厚度59.5) v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J2运动部分(镜像):1/S5J2J3连接件(镜像):1"
+      ]
+    },
+    "left_shoulder_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0005999999999999996,
+        0.16190000000000002,
+        0.22858
+      ],
+      "meshes": [
+        "meshes/left_shoulder_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/J1/J3电机架 v2(镜像):5/J1电机架A(镜像):1",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/J1/J3电机架 v2(镜像):5/J1电机架B(镜像):1",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/J1/J3电机架 v2(镜像):5/RP50H(厚度59.5) v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/S5-J3电机输出(镜像):1",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/S5-J3笼式立板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/S5-J3笼式立板(镜像):2",
+        "/S5新右臂(镜像):1/S5-J3运动部分(镜像):1/S5-J3-J4电机固定块(镜像):1"
+      ]
+    },
+    "left_wrist_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/left_wrist_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/1.5模20齿锥齿轮组 v18(镜像):1/m1.5000 mm / z16(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/手掌 v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/手掌后盖(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/手背手套LOGO灯压板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/透光PC片(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/WH120-FPC-CONN-HAND-001(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):3",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):4",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):5",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):6",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/LOGO灯螺钉(镜像):1/M1.2×2梅花螺钉(镜像):7",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/手腕线束 (1)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/信号板端子压垫2(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/WH120-FPC-EXT-IMU-001(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/线束(镜像):1/网线延长线RJ45-网线插头 v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/线束(镜像):1/xt30母头 v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/线束(镜像):1#residual",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/M1.2×2梅花螺钉(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/M1.2×2梅花螺钉(镜像):8",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/M1.2×2梅花螺钉(镜像):9",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/Wuji Hand 2 右手手掌模型 复制 v2(镜像):1/M1.2×2梅花螺钉(镜像):10",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/手背固定(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/执行器(镜像):1/手心固定(镜像):1"
+      ]
+    },
+    "left_wrist_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.09960000000000001,
+        0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/left_wrist_roll_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/手臂抱死件-改 v1(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/手臂抱死件-改 v1(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/RP40S行星关节模组_A01 2026.03.24 v2(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/RP40S行星关节模组_A01 2026.03.24 v2(镜像):3",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/锥齿轮架(镜像):1/锥齿轮架横板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/锥齿轮架(镜像):1/锥齿轮立板集合(镜像):1/20X27法兰轴承(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/锥齿轮架(镜像):1/锥齿轮立板集合(镜像):1/锥齿轮立板(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/锥齿轮架(镜像):1/锥齿轮立板集合(镜像)(镜像):1/20X27法兰轴承(镜像)(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/固定部分(镜像):1/锥齿轮架(镜像):1/锥齿轮立板集合(镜像)(镜像):1/锥齿轮立板(镜像)(镜像):1"
+      ]
+    },
+    "left_wrist_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/left_wrist_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/小锥齿轮传动轴间隙孔侧(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/小锥齿轮传动轴螺纹侧(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/8X12X3.5法兰(镜像):1",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/8X12X3.5法兰(镜像):2",
+        "/S5新右臂(镜像):1/S5-J4运动部分(镜像):1/eyou锥齿轮手腕雷霆重构 v40(镜像):1/运动部分(镜像):1/锥齿轮保持架系列(镜像):1/中央锥齿轮保持架(镜像):1"
+      ]
+    },
+    "right_arm_long_link_active_aux_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        -0.155,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/right_arm_long_link_active_aux_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/左长连杆:1/轴承螺丝:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/左长连杆:1/左长连杆长杆:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/左长连杆:1/左长连杆短杆:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/左长连杆:1/轴承螺丝:2"
+      ]
+    },
+    "right_arm_long_link_active_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        -0.179,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/right_arm_long_link_active_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/右长连杆(镜像):1/轴承螺丝(镜像):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/右长连杆(镜像):1/轴承螺丝(镜像):2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/右长连杆(镜像):1/左长连杆长杆(镜像):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/右长连杆(镜像):1/左长连杆短杆(镜像):2"
+      ]
+    },
+    "right_arm_long_link_bevel_gear_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        -0.167,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/right_arm_long_link_bevel_gear_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/锥齿轮输入:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/1.5模20齿锥齿轮组 v18:1/带轴承装配:1/m1.5000 mm / z20:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/1.5模20齿锥齿轮组 v18:1/带轴承装配:1/18X12X4轴承:1"
+      ]
+    },
+    "right_arm_long_link_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.12560000000000002,
+        -0.167,
+        0.17508
+      ],
+      "meshes": [
+        "meshes/right_arm_long_link_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/长边传动系列:1/电机输出:1"
+      ]
+    },
+    "right_arm_short_link_active_aux_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        -0.179,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/right_arm_short_link_active_aux_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆:1/左短连杆长杆:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆:1/左短连杆短杆:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆:1/轴承螺丝:3",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆:1/轴承螺丝:5"
+      ]
+    },
+    "right_arm_short_link_active_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        -0.155,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/right_arm_short_link_active_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆(镜像):1/左短连杆长杆(镜像):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆(镜像):1/轴承螺丝(镜像) (1):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆(镜像):1/轴承螺丝(镜像) (1):2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/左短连杆(镜像):1/左短连杆短杆(镜像):1"
+      ]
+    },
+    "right_arm_short_link_bevel_gear_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        -0.167,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/right_arm_short_link_bevel_gear_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/锥齿轮输入:3",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/1.5模20齿锥齿轮组 v18:1/带轴承装配:2/m1.5000 mm / z20:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/1.5模20齿锥齿轮组 v18:1/带轴承装配:2/18X12X4轴承:1"
+      ]
+    },
+    "right_arm_short_link_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.1726,
+        -0.167,
+        0.12207999999999998
+      ],
+      "meshes": [
+        "meshes/right_arm_short_link_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/短边传动系列:1/电机输出:2"
+      ]
+    },
+    "right_elbow_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0024000000000000002,
+        -0.1975,
+        0.17338000000000003
+      ],
+      "meshes": [
+        "meshes/right_elbow_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/零部件791:1",
+        "/S5新右臂:1/S5-J4运动部分:1/J4主动碳板:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/J5固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:3",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/J5固定部分:1/J5电机架：40s抱箍 v3:1/40s抱箍（间隙孔）:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/J5固定部分:1/J5电机架：40s抱箍 v3:1/40s抱箍（螺纹孔）:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/J5固定部分:1/J5传动板:2"
+      ]
+    },
+    "right_shoulder_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0048,
+        -0.097855,
+        0.416045
+      ],
+      "meshes": [
+        "meshes/right_shoulder_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J1运动部分 :1/S5-J1抱箍连接横板:1",
+        "/S5新右臂:1/S5-J1运动部分 :1/S5-J1抱箍连接立板:1",
+        "/S5新右臂:1/S5-J1运动部分 :1/J1/J3电机架 v2:2/J1电机架A:1",
+        "/S5新右臂:1/S5-J1运动部分 :1/J1/J3电机架 v2:2/J1电机架B:1",
+        "/S5新右臂:1/S5-J1运动部分 :1/J1/J3电机架 v2:2/RP50H(厚度59.5) v1:1"
+      ]
+    },
+    "right_shoulder_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.037200000000000004,
+        -0.1469,
+        0.39440000000000003
+      ],
+      "meshes": [
+        "meshes/right_shoulder_roll_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J2运动部分:1/S5J2J3连接件:1",
+        "/S5新右臂:1/S5-J2运动部分:1/J1/J3电机架 v2:3/J1电机架A:1",
+        "/S5新右臂:1/S5-J2运动部分:1/J1/J3电机架 v2:3/J1电机架B:1",
+        "/S5新右臂:1/S5-J2运动部分:1/J1/J3电机架 v2:3/RP50H(厚度59.5) v1:1"
+      ]
+    },
+    "right_shoulder_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        -0.0005999999999999996,
+        -0.16190000000000002,
+        0.22858
+      ],
+      "meshes": [
+        "meshes/right_shoulder_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J3运动部分:1/S5-J3电机输出:1",
+        "/S5新右臂:1/S5-J3运动部分:1/S5-J3笼式立板:1",
+        "/S5新右臂:1/S5-J3运动部分:1/S5-J3-J4电机固定块:1",
+        "/S5新右臂:1/S5-J3运动部分:1/J1/J3电机架 v2:4/J1电机架A:1",
+        "/S5新右臂:1/S5-J3运动部分:1/J1/J3电机架 v2:4/J1电机架B:1",
+        "/S5新右臂:1/S5-J3运动部分:1/J1/J3电机架 v2:4/RP50H(厚度59.5) v1:1",
+        "/S5新右臂:1/S5-J3运动部分:1/S5-J3笼式立板:2"
+      ]
+    },
+    "right_wrist_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        -0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/right_wrist_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/1.5模20齿锥齿轮组 v18:1/m1.5000 mm / z16:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/手掌 v1:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/手掌后盖:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/手背手套LOGO灯压板:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/透光PC片:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/WH120-FPC-CONN-HAND-001:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:3",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:4",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:5",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/LOGO灯螺钉:1/M1.2×2梅花螺钉:6",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/手腕线束 (1):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/信号板端子压垫2:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/WH120-FPC-EXT-IMU-001:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/线束:1/网线延长线RJ45-网线插头 v1:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/线束:1/xt30母头 v1:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/线束:1#residual",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/M1.2×2梅花螺钉:7",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/M1.2×2梅花螺钉:8",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/M1.2×2梅花螺钉:9",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/Wuji Hand 2 右手手掌模型 复制 v2:1/M1.2×2梅花螺钉:10",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/手背固定:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/执行器:1/手心固定:1"
+      ]
+    },
+    "right_wrist_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.09960000000000001,
+        -0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/right_wrist_roll_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/手臂抱死件-改 v1:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/手臂抱死件-改 v1:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/锥齿轮架:1/锥齿轮架横板:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/锥齿轮架:1/锥齿轮立板集合:1/20X27法兰轴承:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/锥齿轮架:1/锥齿轮立板集合:1/锥齿轮立板:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/锥齿轮架:1/锥齿轮立板集合(镜像):1/20X27法兰轴承(镜像):1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/固定部分:1/锥齿轮架:1/锥齿轮立板集合(镜像):1/锥齿轮立板(镜像):1"
+      ]
+    },
+    "right_wrist_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.2251,
+        -0.167,
+        0.14838
+      ],
+      "meshes": [
+        "meshes/right_wrist_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/小锥齿轮传动轴间隙孔侧:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/小锥齿轮传动轴螺纹侧:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/8X12X3.5法兰:2",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/8X12X3.5法兰:1",
+        "/S5新右臂:1/S5-J4运动部分:1/eyou锥齿轮手腕雷霆重构 v40:2/运动部分:1/锥齿轮保持架系列:1/中央锥齿轮保持架:1"
+      ]
+    },
+    "waist_left_link_driven_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.03415000000000001,
+        0.022,
+        0.08930000000000002
+      ],
+      "meshes": [
+        "meshes/waist_left_link_driven_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/鱼眼轴承 v2:5",
+        "/S4eyou腰 v17:1/雷霆大改真连杆(镜像):1"
+      ]
+    },
+    "waist_left_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.02515,
+        0.0425,
+        0.15730000000000002
+      ],
+      "meshes": [
+        "meshes/waist_left_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/雷霆大改电机输出:2/鱼眼轴承 v2:1",
+        "/S4eyou腰 v17:1/雷霆大改电机输出:2/雷霆大改电机输出本体:1",
+        "/S4eyou腰 v17:1/雷霆大改电机输出:2/雷霆大改电机输出刚度补偿:1"
+      ]
+    },
+    "waist_pitch_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0,
+        0.0,
+        0.1053
+      ],
+      "meshes": [
+        "meshes/waist_pitch_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/新十字轴组件:1/新十字轴:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/十字轴组件轴:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/台阶螺钉直径12长度20:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/10X12X0.5垫片:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/10X12X0.5垫片:4",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X16X0.5垫片:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:2",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:3",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:4",
+        "/S4eyou腰 v17:1/新十字轴组件:1/m6X14X1垫片:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/M6X6超薄头螺钉:1",
+        "/S4eyou腰 v17:1/新十字轴组件:1/M6X6超薄头螺钉:2",
+        "/S4eyou腰 v17:1/新十字轴组件:1/m6X14X1垫片:2",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:5",
+        "/S4eyou腰 v17:1/新十字轴组件:1/12X18X4法兰轴承:6",
+        "/S4eyou腰 v17:1/新十字轴组件:1/m6X14X1垫片:5",
+        "/S4eyou腰 v17:1/新十字轴组件:1/m6X14X1垫片:6",
+        "/S4eyou腰 v17:1/新十字轴组件:1/M6X6超薄头螺钉:3"
+      ]
+    },
+    "waist_right_link_driven_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.03415000000000001,
+        -0.0221,
+        0.08930000000000002
+      ],
+      "meshes": [
+        "meshes/waist_right_link_driven_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/鱼眼轴承 v2:4",
+        "/S4eyou腰 v17:1/雷霆大改真连杆:1"
+      ]
+    },
+    "waist_right_motor_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.02515,
+        -0.0425,
+        0.15730000000000002
+      ],
+      "meshes": [
+        "meshes/waist_right_motor_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/雷霆大改电机输出:1/鱼眼轴承 v2:1",
+        "/S4eyou腰 v17:1/雷霆大改电机输出:1/雷霆大改电机输出本体:1",
+        "/S4eyou腰 v17:1/雷霆大改电机输出:1/雷霆大改电机输出刚度补偿:1"
+      ]
+    },
+    "waist_roll_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0,
+        0.0,
+        0.1053
+      ],
+      "meshes": [
+        "meshes/waist_roll_link.STL",
+        "meshes/waist_roll_link_torso.STL",
+        "meshes/waist_roll_link_right_shoulder_mount.STL",
+        "meshes/waist_roll_link_left_shoulder_mount.STL",
+        "meshes/waist_roll_link_neck_mount.STL"
+      ],
+      "inertial_source_paths": [
+        "/胸腔:1/胸前板:1",
+        "/胸腔:1/胸前板:2",
+        "/胸腔:1/零部件756:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/手臂抱死件-改 v1:2",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:2",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/手臂抱死件-改 v1:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/RP40S行星关节模组_A01 2026.03.24 v2:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/钢柱:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮架:2/锥齿轮架横板:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮架:2/锥齿轮立板集合:1/20X27法兰轴承:1/零部件75:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮架:2/锥齿轮立板集合:1/锥齿轮立板:1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮架:2/锥齿轮立板集合(镜像):1/20X27法兰轴承(镜像):1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/新锥齿轮架:2/锥齿轮架:2/锥齿轮立板集合(镜像):1/锥齿轮立板(镜像):1",
+        "/eyou锥齿轮脖子雷霆重构 v22:1/固定部分:1/eyou新脖子托板 v1:1",
+        "/S4eyou腰 v17:1/雷霆大改前端固定铝件:1/雷霆大改前端固定铝件分件:1",
+        "/S4eyou腰 v17:1/雷霆大改前端固定铝件:1#residual",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/雷霆大改后端固定铝件电机固定大板:1",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/轴承固定板a:1/轴承固定板a本体:1",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/轴承固定板a:1/10X15X4法兰轴承:1",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/轴承固定板a:1/10X15X4法兰轴承:2",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/轴承固定板b本体:1",
+        "/S4eyou腰 v17:1/雷霆大改后端固定铝件 :1/雷霆大改后端固定胸腔固定铝件:1",
+        "/S4eyou腰 v17:1/腰部与胸腔连接件:1",
+        "/S4eyou腰 v17:1/RP70H外形图 V1.0 20260310 v1:1",
+        "/S4eyou腰 v17:1/RP70H外形图 V1.0 20260310 v1:2",
+        "/干涉区:1",
+        "/S5新右臂:1/S5-J1固定部分 :1/J1/J3电机架 v2:1/J1电机架A:1",
+        "/S5新右臂:1/S5-J1固定部分 :1/J1/J3电机架 v2:1/J1电机架B:1",
+        "/S5新右臂:1/S5-J1固定部分 :1/J1/J3电机架 v2:1/RP50H(厚度59.5) v1:1",
+        "/S5新右臂(镜像):1/S5-J1固定部分 (镜像):1/J1/J3电机架 v2(镜像):1/J1电机架A(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1固定部分 (镜像):1/J1/J3电机架 v2(镜像):1/J1电机架B(镜像):1",
+        "/S5新右臂(镜像):1/S5-J1固定部分 (镜像):1/J1/J3电机架 v2(镜像):1/RP50H(厚度59.5) v1(镜像):1"
+      ]
+    },
+    "waist_yaw_link": {
+      "role": "physical",
+      "frame_origin_robot_m": [
+        0.0,
+        0.0,
+        0.06980000000000001
+      ],
+      "meshes": [
+        "meshes/waist_yaw_link.STL"
+      ],
+      "inertial_source_paths": [
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/轴承固定板c:1",
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/轴承固定板c:2",
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/yaw轴与十字轴连接件:1",
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/鱼眼轴承固定座总装:1/鱼眼轴承固定座底座:1",
+        "/S4eyou腰 v17:1/yaw轴与十字轴连接装配:1/鱼眼轴承固定座总装:1/鱼眼轴承固定座刚度补偿盖:1"
+      ]
+    }
+  },
+  "joints": {
+    "waist_yaw_joint": {
+      "parent": "base_link",
+      "child": "waist_yaw_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.06980000000000001
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_right_link_driven_joint": {
+      "parent": "waist_yaw_link",
+      "child": "waist_right_link_driven_link",
+      "origin_parent_m": [
+        0.03415000000000001,
+        -0.0221,
+        0.019500000000000003
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_left_link_driven_joint": {
+      "parent": "waist_yaw_link",
+      "child": "waist_left_link_driven_link",
+      "origin_parent_m": [
+        0.03415000000000001,
+        0.022,
+        0.019500000000000003
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_pitch_joint": {
+      "parent": "waist_yaw_link",
+      "child": "waist_pitch_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.03549999999999999
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_roll_joint": {
+      "parent": "waist_pitch_link",
+      "child": "waist_roll_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_right_motor_joint": {
+      "parent": "waist_roll_link",
+      "child": "waist_right_motor_link",
+      "origin_parent_m": [
+        0.02515,
+        -0.0425,
+        0.05200000000000002
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "waist_left_motor_joint": {
+      "parent": "waist_roll_link",
+      "child": "waist_left_motor_link",
+      "origin_parent_m": [
+        0.02515,
+        0.0425,
+        0.05200000000000002
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_shoulder_pitch_joint": {
+      "parent": "waist_roll_link",
+      "child": "right_shoulder_pitch_link",
+      "origin_parent_m": [
+        -0.0048,
+        -0.097855,
+        0.310745
+      ],
+      "axis_joint": [
+        0.0,
+        0.94832,
+        -0.3173
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_shoulder_roll_joint": {
+      "parent": "right_shoulder_pitch_link",
+      "child": "right_shoulder_roll_link",
+      "origin_parent_m": [
+        0.042,
+        -0.049045000000000005,
+        -0.02164499999999997
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_shoulder_yaw_joint": {
+      "parent": "right_shoulder_roll_link",
+      "child": "right_shoulder_yaw_link",
+      "origin_parent_m": [
+        -0.0378,
+        -0.015000000000000013,
+        -0.16582000000000002
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_elbow_joint": {
+      "parent": "right_shoulder_yaw_link",
+      "child": "right_elbow_link",
+      "origin_parent_m": [
+        0.003,
+        -0.03559999999999999,
+        -0.05519999999999997
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_wrist_roll_joint": {
+      "parent": "right_elbow_link",
+      "child": "right_wrist_roll_link",
+      "origin_parent_m": [
+        0.09720000000000001,
+        0.0305,
+        -0.025000000000000022
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_long_link_motor_joint": {
+      "parent": "right_wrist_roll_link",
+      "child": "right_arm_long_link_motor_link",
+      "origin_parent_m": [
+        0.02600000000000001,
+        0.0,
+        0.0267
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_long_link_active_joint": {
+      "parent": "right_arm_long_link_motor_link",
+      "child": "right_arm_long_link_active_link",
+      "origin_parent_m": [
+        0.0,
+        -0.011999999999999983,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_long_link_active_aux_joint": {
+      "parent": "right_arm_long_link_motor_link",
+      "child": "right_arm_long_link_active_aux_link",
+      "origin_parent_m": [
+        0.0,
+        0.01200000000000001,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_short_link_motor_joint": {
+      "parent": "right_wrist_roll_link",
+      "child": "right_arm_short_link_motor_link",
+      "origin_parent_m": [
+        0.073,
+        0.0,
+        -0.02630000000000003
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_short_link_active_joint": {
+      "parent": "right_arm_short_link_motor_link",
+      "child": "right_arm_short_link_active_link",
+      "origin_parent_m": [
+        0.0,
+        0.01200000000000001,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_short_link_active_aux_joint": {
+      "parent": "right_arm_short_link_motor_link",
+      "child": "right_arm_short_link_active_aux_link",
+      "origin_parent_m": [
+        0.0,
+        -0.011999999999999983,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_wrist_yaw_joint": {
+      "parent": "right_wrist_roll_link",
+      "child": "right_wrist_yaw_link",
+      "origin_parent_m": [
+        0.1255,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_wrist_pitch_joint": {
+      "parent": "right_wrist_yaw_link",
+      "child": "right_wrist_pitch_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_long_link_bevel_gear_joint": {
+      "parent": "right_wrist_yaw_link",
+      "child": "right_arm_long_link_bevel_gear_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0267
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "right_arm_short_link_bevel_gear_joint": {
+      "parent": "right_wrist_yaw_link",
+      "child": "right_arm_short_link_bevel_gear_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        -0.02630000000000003
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_shoulder_pitch_joint": {
+      "parent": "waist_roll_link",
+      "child": "left_shoulder_pitch_link",
+      "origin_parent_m": [
+        -0.0048,
+        0.097855,
+        0.310745
+      ],
+      "axis_joint": [
+        0.0,
+        0.94832,
+        0.3173
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_shoulder_roll_joint": {
+      "parent": "left_shoulder_pitch_link",
+      "child": "left_shoulder_roll_link",
+      "origin_parent_m": [
+        0.042,
+        0.049045000000000005,
+        -0.02164499999999997
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_shoulder_yaw_joint": {
+      "parent": "left_shoulder_roll_link",
+      "child": "left_shoulder_yaw_link",
+      "origin_parent_m": [
+        -0.0378,
+        0.015000000000000013,
+        -0.16582000000000002
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_elbow_joint": {
+      "parent": "left_shoulder_yaw_link",
+      "child": "left_elbow_link",
+      "origin_parent_m": [
+        0.003,
+        0.03559999999999999,
+        -0.05519999999999997
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_wrist_roll_joint": {
+      "parent": "left_elbow_link",
+      "child": "left_wrist_roll_link",
+      "origin_parent_m": [
+        0.09720000000000001,
+        -0.0305,
+        -0.025000000000000022
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_long_link_motor_joint": {
+      "parent": "left_wrist_roll_link",
+      "child": "left_arm_long_link_motor_link",
+      "origin_parent_m": [
+        0.02600000000000001,
+        0.0,
+        0.0267
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_long_link_active_joint": {
+      "parent": "left_arm_long_link_motor_link",
+      "child": "left_arm_long_link_active_link",
+      "origin_parent_m": [
+        0.0,
+        0.011999999999999983,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_long_link_active_aux_joint": {
+      "parent": "left_arm_long_link_motor_link",
+      "child": "left_arm_long_link_active_aux_link",
+      "origin_parent_m": [
+        0.0,
+        -0.01200000000000001,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_short_link_motor_joint": {
+      "parent": "left_wrist_roll_link",
+      "child": "left_arm_short_link_motor_link",
+      "origin_parent_m": [
+        0.073,
+        0.0,
+        -0.02630000000000003
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_short_link_active_joint": {
+      "parent": "left_arm_short_link_motor_link",
+      "child": "left_arm_short_link_active_link",
+      "origin_parent_m": [
+        0.0,
+        -0.01200000000000001,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_short_link_active_aux_joint": {
+      "parent": "left_arm_short_link_motor_link",
+      "child": "left_arm_short_link_active_aux_link",
+      "origin_parent_m": [
+        0.0,
+        0.011999999999999983,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_wrist_yaw_joint": {
+      "parent": "left_wrist_roll_link",
+      "child": "left_wrist_yaw_link",
+      "origin_parent_m": [
+        0.1255,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_wrist_pitch_joint": {
+      "parent": "left_wrist_yaw_link",
+      "child": "left_wrist_pitch_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_long_link_bevel_gear_joint": {
+      "parent": "left_wrist_yaw_link",
+      "child": "left_arm_long_link_bevel_gear_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0267
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "left_arm_short_link_bevel_gear_joint": {
+      "parent": "left_wrist_yaw_link",
+      "child": "left_arm_short_link_bevel_gear_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        -0.02630000000000003
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "head_roll_joint": {
+      "parent": "waist_roll_link",
+      "child": "head_roll_link",
+      "origin_parent_m": [
+        -0.0047,
+        -0.0002,
+        0.4074999999999999
+      ],
+      "axis_joint": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "head_pitch_joint": {
+      "parent": "head_roll_link",
+      "child": "head_pitch_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "axis_joint": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    },
+    "head_yaw_joint": {
+      "parent": "head_pitch_link",
+      "child": "head_yaw_link",
+      "origin_parent_m": [
+        0.0,
+        0.0,
+        0.040000000000000036
+      ],
+      "axis_joint": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "positive_motion": "沿 STAGE3 关节轴右手定则",
+      "source": "S4 CAD axis with STAGE3 sign convention"
+    }
+  }
+}
