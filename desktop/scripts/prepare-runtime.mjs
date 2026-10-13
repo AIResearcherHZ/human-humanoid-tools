@@ -136,7 +136,7 @@ function shouldCopyApplication(path) {
 const applicationInputs = [
   'hhtools',
   'configs',
-  'assets/reference_poses',
+  'hhtools/data/reference_poses',
   'docker/gvhmr',
   'LICENSE',
   'README.md',

@@ -2,7 +2,7 @@
 
 The retarget pipeline calibrates and scales every source format against a
 *rest pose* — the answer to "what does this skeleton look like at rest?".
-SOMA / Xsens ship a bundled ``assets/reference_poses/*_zero_frame0.bvh`` for
+SOMA / Xsens ship a bundled ``hhtools/data/reference_poses/*_zero_frame0.bvh`` for
 this.  LAFAN / 20260429-mocap historically synthesised their rest on the fly
 from each clip's median bone lengths.  This script bakes that same synthesised
 T-pose into a bundled BVH so those formats use the identical file-based
@@ -16,7 +16,7 @@ Usage::
 
     python scripts/make_reference_pose_bvh.py \
         --clip assets/motions/mimic/LAFAN/dance1_subject2.bvh \
-        --out assets/reference_poses/lafan_zero_frame0.bvh
+        --out hhtools/data/reference_poses/lafan_zero_frame0.bvh
 """
 
 from __future__ import annotations

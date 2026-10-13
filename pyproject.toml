@@ -150,6 +150,8 @@ exclude = ["assets*", "configs*"]
 hhtools = [
     "py.typed",
     "io/data/*.npz",
+    "data/reference_poses/*.bvh",
+    "data/reference_poses/*.npz",
     "web/static/*",
     "web/static/**/*",
 ]
