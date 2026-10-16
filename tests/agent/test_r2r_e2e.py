@@ -10,6 +10,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
+import pytest
 import yaml
 from mcp import Client
 
@@ -42,10 +43,12 @@ def _write_robot_bundle(model, root: Path) -> Path:
     return target
 
 
+@pytest.mark.parametrize("trajectory_format", ["csv", "isaaclab_npz"])
 def test_agent_runs_self_contained_r2r_plan_to_verified_artifacts(
     tmp_path: Path,
     monkeypatch,
     grounding_robot_pair,
+    trajectory_format: str,
 ) -> None:
     source_model, target_model = grounding_robot_pair
     source_root = tmp_path / "source"
@@ -63,16 +66,26 @@ def test_agent_runs_self_contained_r2r_plan_to_verified_artifacts(
         calibrated_joint_q={name: 0.0 for name in target_model.dof_names()},
         user_root=user_robot_root,
     )
-    trajectory_path = source_root / "walk.csv"
+    trajectory_path = source_root / ("walk.csv" if trajectory_format == "csv" else "walk.npz")
     joint_q = np.zeros((1, 7 + len(source_model.dof_names())), dtype=np.float32)
     joint_q[:, 2] = 1.0
     joint_q[:, 6] = 1.0
-    save_robot_csv(
-        trajectory_path,
-        robot=source_model,
-        joint_q=joint_q,
-        sample_rate=50.0,
-    )
+    if trajectory_format == "csv":
+        save_robot_csv(
+            trajectory_path,
+            robot=source_model,
+            joint_q=joint_q,
+            sample_rate=50.0,
+        )
+    else:
+        np.savez(
+            trajectory_path,
+            joint_names=np.asarray(source_model.dof_names()),
+            joint_pos=joint_q[:, 7:],
+            base_pos_w=joint_q[:, :3],
+            base_quat_w=joint_q[:, [6, 3, 4, 5]],
+            sample_rate=np.array(50.0),
+        )
 
     paths = replace(
         ApplicationPaths.isolated(tmp_path / "runtime", source_root=source_root),
@@ -102,7 +115,10 @@ def test_agent_runs_self_contained_r2r_plan_to_verified_artifacts(
                     {"root_id": "source", "kind": "robot_trajectory_bundle"},
                 )
                 assert catalog.structured_content["total"] == 1
-                assert catalog.structured_content["assets"][0]["relative_path"] == "walk.csv"
+                assert (
+                    catalog.structured_content["assets"][0]["relative_path"]
+                    == trajectory_path.name
+                )
                 assert (
                     catalog.structured_content["assets"][0]["category"]
                     == "robot_trajectory"

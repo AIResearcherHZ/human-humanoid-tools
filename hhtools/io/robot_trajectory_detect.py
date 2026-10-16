@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
+from hhtools.io.isaaclab_trajectory import ISAACLAB_TRAINING_KEYS, decode_isaaclab_trajectory
+
 ROBOT_TRAJECTORY_EXTENSIONS = (".csv", ".pkl", ".npz")
 
 
@@ -98,7 +100,7 @@ def joint_q_width_from_pkl(path: Path) -> int:  # noqa: PLR0911 - defensive form
 
 
 def joint_q_width_from_npz(path: Path) -> int:
-    """Return joint-q column count for an hhtools robot-export NPZ, else zero."""
+    """Return root-plus-DoF width for hhtools or IsaacLab training NPZ arrays."""
 
     try:
         archive = np.load(path, allow_pickle=False)
@@ -112,7 +114,10 @@ def joint_q_width_from_npz(path: Path) -> int:
                 None,
             )
             if joint_q_key is None:
-                return 0
+                if not ISAACLAB_TRAINING_KEYS.issubset(keys):
+                    return 0
+                joint_q, _ = decode_isaaclab_trajectory(archive)
+                return int(joint_q.shape[1])
             joint_q = np.asarray(archive[joint_q_key])
             if joint_q.ndim != 2 or joint_q.shape[1] < 8:
                 return 0

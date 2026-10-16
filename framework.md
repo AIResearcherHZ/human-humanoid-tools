@@ -119,6 +119,24 @@ SMPL 参数序列    ──┼──►  Motion + NPZ  ──►  RetargetedMoti
 | `Motion.quaternions` | 全局四元数，**xyzw** |
 | 机器人 CSV | `time, root_xyz, root_qxyzw, dof_<j1>, dof_<j2>, …` |
 
+### 3.1 R2R 的 IsaacLab training-convention NPZ 输入
+
+机器人到机器人（R2R）流程兼容包含以下字段的训练参考轨迹：
+
+| 字段 | 形状与约定 |
+|------|------------|
+| `joint_names` | `(N,)`，Unicode 或 UTF-8 字节串，关节名非空且唯一 |
+| `joint_pos` | `(F, N)`，按 `joint_names` 排列的关节值 |
+| `base_pos_w` | `(F, 3)`，世界坐标位置，沿用内部米制、Z-up 坐标约定 |
+| `base_quat_w` | `(F, 4)`，世界坐标四元数，**wxyz** |
+
+加载时转换为内部的 `(F, 7 + N)`：`root_xyz + root_qxyzw + joint_pos`。
+帧率依次读取 `sample_rate`、`fps`、`framerate`；缺失时加载器沿用
+`source_fps` / 50 Hz 回退，Agent 检查会提示补充帧率。
+已有 `joint_q` / `qpos` / `q` 格式保持优先，原有四元数约定不变。
+这是一种明确的数组布局兼容，不代表所有 IsaacLab 导出都使用该格式。
+NPZ 读取保持 `allow_pickle=False`，object 数组不作为关节名输入。
+
 ---
 
 ## 4. 重映射模式与后端选择

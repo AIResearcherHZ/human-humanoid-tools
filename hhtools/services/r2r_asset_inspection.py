@@ -24,6 +24,7 @@ from hhtools.contracts import (
     ErrorStage,
     InspectionStatus,
 )
+from hhtools.io.isaaclab_trajectory import ISAACLAB_TRAINING_KEYS, decode_isaaclab_trajectory
 from hhtools.io.robot_trajectory_detect import sniff_robot_csv
 
 SUPPORTED_R2R_PRIMARY_EXTENSIONS = frozenset({".csv", ".npz", ".pickle", ".pkl"})
@@ -171,7 +172,10 @@ def _is_r2r_candidate(path: Path, *, allow_code_capable: bool) -> bool:
     if suffix == ".csv":
         return sniff_robot_csv(path)
     if suffix == ".npz":
-        return bool(_npz_member_names(path).intersection({"joint_q", "qpos", "q"}))
+        keys = _npz_member_names(path)
+        return bool(keys.intersection({"joint_q", "qpos", "q"})) or (
+            ISAACLAB_TRAINING_KEYS.issubset(keys)
+        )
     return allow_code_capable
 
 
@@ -397,13 +401,29 @@ def _inspect_npz(path: Path) -> _TrajectoryFacts:
     with np.load(path, allow_pickle=False) as archive:
         keys = set(archive.files)
         joint_key = next((key for key in ("joint_q", "qpos", "q") if key in keys), None)
+        isaaclab_names: tuple[str, ...] | None = None
         if joint_key is None:
-            raise _TrajectoryValidationError("robot NPZ has no joint_q/qpos/q array")
-        joint_q = _bounded_npz_array(
-            archive,
-            joint_key,
-            max_bytes=_MAX_TRAJECTORY_ARRAY_BYTES,
-        )
+            if not ISAACLAB_TRAINING_KEYS.issubset(keys):
+                raise _TrajectoryValidationError("robot NPZ has no supported trajectory arrays")
+            arrays = {
+                key: _bounded_npz_array(
+                    archive,
+                    key,
+                    max_bytes=(
+                        _MAX_METADATA_MEMBER_BYTES
+                        if key == "joint_names"
+                        else _MAX_TRAJECTORY_ARRAY_BYTES
+                    ),
+                )
+                for key in sorted(ISAACLAB_TRAINING_KEYS)
+            }
+            joint_q, isaaclab_names = decode_isaaclab_trajectory(arrays)
+        else:
+            joint_q = _bounded_npz_array(
+                archive,
+                joint_key,
+                max_bytes=_MAX_TRAJECTORY_ARRAY_BYTES,
+            )
         if joint_q.ndim != 2 or joint_q.shape[0] < 1 or joint_q.shape[1] < 8:
             raise _TrajectoryValidationError("robot NPZ joint_q must have shape (frames, 7+DOF)")
         if not np.issubdtype(joint_q.dtype, np.number) or not bool(np.isfinite(joint_q).all()):
@@ -412,8 +432,8 @@ def _inspect_npz(path: Path) -> _TrajectoryFacts:
             raise _TrajectoryValidationError("robot NPZ contains a zero root quaternion")
 
         dof_count = int(joint_q.shape[1] - 7)
-        dof_names: tuple[str, ...] = ()
-        if "dof_names" in keys:
+        dof_names = isaaclab_names or ()
+        if isaaclab_names is None and "dof_names" in keys:
             raw_names = _bounded_npz_array(
                 archive,
                 "dof_names",

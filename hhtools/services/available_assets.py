@@ -22,6 +22,7 @@ from hhtools.contracts import (
     AvailableAssetCatalogResponse,
     ErrorStage,
 )
+from hhtools.io.isaaclab_trajectory import ISAACLAB_TRAINING_KEYS
 
 from .assets import AssetServiceError
 
@@ -214,7 +215,9 @@ def _classify_npz_robot_trajectory(path: Path) -> bool | None:
         for name in names
         if name.casefold().endswith(".npy")
     }
-    return bool(keys.intersection({"joint_q", "qpos", "q"}))
+    return bool(keys.intersection({"joint_q", "qpos", "q"})) or (
+        ISAACLAB_TRAINING_KEYS.issubset(keys)
+    )
 
 
 def classify_catalog_robot_trajectory(
