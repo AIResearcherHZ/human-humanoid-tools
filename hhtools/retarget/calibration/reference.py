@@ -591,7 +591,7 @@ def _build_static_soma() -> HumanReferencePose:
 
 @lru_cache(maxsize=1)
 def _soma17_from_zero_bvh() -> HumanReferencePose | None:
-    """17-joint subset of ``assets/reference_poses/soma_zero_frame0.bvh`` frame 0."""
+    """17-joint subset of ``hhtools/data/reference_poses/soma_zero_frame0.bvh`` frame 0."""
 
     try:
         from hhtools.io.bvh import load_bvh
@@ -676,7 +676,7 @@ def _build_static_lafan() -> HumanReferencePose:
 
 @lru_cache(maxsize=1)
 def _lafan17_from_zero_bvh() -> HumanReferencePose | None:
-    """17-joint subset of ``assets/reference_poses/lafan_zero_frame0.bvh`` frame 0."""
+    """17-joint subset of ``hhtools/data/reference_poses/lafan_zero_frame0.bvh`` frame 0."""
 
     try:
         from hhtools.io.bvh import load_bvh
@@ -762,7 +762,7 @@ def _build_static_mocap() -> HumanReferencePose:
 
 @lru_cache(maxsize=1)
 def _mocap17_from_zero_bvh() -> HumanReferencePose | None:
-    """17-joint subset of ``assets/reference_poses/mocap_zero_frame0.bvh`` frame 0."""
+    """17-joint subset of ``hhtools/data/reference_poses/mocap_zero_frame0.bvh`` frame 0."""
 
     try:
         from hhtools.io.bvh import load_bvh
@@ -848,7 +848,7 @@ def _build_static_xsens_mocap() -> HumanReferencePose:
 
 @lru_cache(maxsize=1)
 def _xsens17_from_zero_bvh() -> HumanReferencePose | None:
-    """17-joint bind T-pose of ``assets/reference_poses/xsens_mocap_zero_frame0.bvh``.
+    """17-joint bind T-pose of ``hhtools/data/reference_poses/xsens_mocap_zero_frame0.bvh``.
 
     The bundled file's frame 0 is a stand / arms-down pose.  Calibration
     overlays and scaler rest must use the BVH bind (identity locals = T-pose)
@@ -1023,7 +1023,7 @@ def load_reference_pose(name: str) -> HumanReferencePose:
 
 
 # Names that indicate a virtual wrapper node above the real pelvis/hips.
-# Mirrors :data:`hhtools.viewer.anatomy._VIRTUAL_ROOT_NAMES` but kept local
+# Mirrors :data:`hhtools.core.anatomy._VIRTUAL_ROOT_NAMES` but kept local
 # so ``reference.py`` stays independent of viewer internals.
 _VIRTUAL_ROOT_NAMES: frozenset[str] = frozenset({
     "root", "reference", "world", "armature", "origin", "root_body",
