@@ -70,8 +70,8 @@ __all__ = [
 ]
 
 # Upstream soma-retargeter ships ``soma/soma_zero_frame0.bvh``.  We bundle the
-# same file under ``assets/reference_poses/`` so SOMA calibration and scaler
-# derivation always use the format's canonical rest pose — not an arbitrary
+# same file as package data under ``hhtools/data/reference_poses/`` so SOMA
+# calibration and scaler derivation always use the format's canonical rest pose — not an arbitrary
 # clip's frame 0 (which may be mid-stride, crouched, etc.).
 _BUNDLED_REFERENCE_BVH: dict[str, str] = {
     "soma_bvh": "soma_zero_frame0.bvh",
@@ -82,12 +82,10 @@ _BUNDLED_REFERENCE_BVH: dict[str, str] = {
 
 
 def _reference_poses_dir() -> Path | None:
-    here = Path(__file__).resolve()
-    for parent in here.parents:
-        candidate = parent / "assets" / "reference_poses"
-        if candidate.is_dir():
-            return candidate
-    return None
+    # Shipped as package data so wheel installs (desktop runtime, pip) find
+    # the same canonical rest poses as a source checkout.
+    candidate = Path(__file__).resolve().parents[2] / "data" / "reference_poses"
+    return candidate if candidate.is_dir() else None
 
 
 def bundled_reference_bvh_path(reference: str) -> Path | None:
@@ -113,7 +111,7 @@ def rest_pose_from_bundled_reference(
     if path is None:
         raise FileNotFoundError(
             f"no bundled zero-frame BVH for reference {reference!r} "
-            f"(expected under assets/reference_poses/)"
+            f"(expected under hhtools/data/reference_poses/)"
         )
     from hhtools.io.bvh import load_bvh
 
