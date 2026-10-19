@@ -1,5 +1,3 @@
-/** Single source of truth for the original Three.js Stage appearance. */
-
 export const SKELETON_VISUALS = {
   source: {
     color: 0x0a84ff,
@@ -96,7 +94,7 @@ export type EnvironmentVisualVariant = keyof typeof ENVIRONMENT_VISUALS;
 export const ROBOT_VISUAL = {
   color: 0xc8ccd4,
   emissive: 0x6b7280,
-  emissiveIntensity: 0.55,
+  emissiveIntensity: 0.45,
   roughness: 0.6,
   metalness: 0.15,
   fallbackColor: 0xb8bdc6,

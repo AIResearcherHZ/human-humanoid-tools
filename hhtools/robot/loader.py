@@ -41,13 +41,10 @@ import yourdfpy
 
 from hhtools.robot.base import JointInfo, LinkInfo, RobotModel, RobotPreset
 
-if TYPE_CHECKING:  # pragma: no cover — import only for type checkers
+if TYPE_CHECKING:
     import trimesh
 
 _log = logging.getLogger(__name__)
-
-
-# --------------------------------------------------------------------------- concrete model
 
 
 @dataclass
@@ -64,16 +61,10 @@ class URDFRobotModel(RobotModel):
     _base_link: str
     _actuated: tuple[JointInfo, ...]
 
-    # yourdfpy.URDF is mutable (it holds scenegraph state for rendering) so we
-    # keep it behind an underscore and expose an immutable view via methods.
     urdf: yourdfpy.URDF = field(repr=False)
-    # Derived MJCF XML string (not a path — we only write to disk on request).
-    # Newton's MJCF loader wants a path, so :meth:`write_mjcf` is the public
-    # way to materialise it.
+
     mjcf_xml: str = field(default="", repr=False)
     mujoco_model: mujoco.MjModel | None = field(default=None, repr=False)
-
-    # ---- ABC implementation ----------------------------------------------------
 
     @property
     def preset(self) -> RobotPreset:
@@ -95,11 +86,8 @@ class URDFRobotModel(RobotModel):
     def actuated_joints(self) -> tuple[JointInfo, ...]:
         return self._actuated
 
-    # ---- rendering helpers -----------------------------------------------------
-
     def trimesh_scene(self, *, collision: bool = False) -> "trimesh.Scene":
         """Return the URDF's trimesh scene at the current joint configuration.
-
         ``collision=False`` (default) uses visual meshes; ``True`` uses the
         URDF ``<collision>`` geometries — usually a cheap decomposition meant
         for the physics solver, handy if the viewer wants to show bounds
@@ -109,7 +97,6 @@ class URDFRobotModel(RobotModel):
 
     def zero_configuration(self) -> dict[str, float]:
         """All actuated joints at 0 — the canonical T-pose for most humanoids.
-
         Returned as ``{joint_name: q}`` so callers can pass it verbatim to
         ``urdf.update_cfg(...)`` without worrying about DOF ordering.
         """
@@ -117,17 +104,18 @@ class URDFRobotModel(RobotModel):
 
     def apply_configuration(self, q: dict[str, float] | np.ndarray) -> None:
         """Set actuated joint angles.
-
         ``q`` can be:
         * a ``dict`` keyed by joint name (missing joints default to 0), or
         * a 1-D array / sequence in the order returned by :meth:`dof_names`.
-
         Mutates ``self.urdf`` in place — the trimesh scene returned from
         :meth:`trimesh_scene` reflects the change immediately (yourdfpy
         invalidates transforms on update).
         """
         if isinstance(q, dict):
-            cfg = {j.name: float(q.get(j.name, 0.0)) for j in self._actuated}
+            cfg = {
+                j.name: float(q.get(j.name, 0.0))
+                for j in self._joints if j.is_actuated
+            }
             self.urdf.update_cfg(cfg)
             return
         arr = np.asarray(q, dtype=float).reshape(-1)
@@ -136,12 +124,12 @@ class URDFRobotModel(RobotModel):
                 f"configuration array has {arr.size} elements but robot "
                 f"has {len(self._actuated)} actuated joints"
             )
-        cfg = {j.name: float(v) for j, v in zip(self._actuated, arr, strict=True)}
+        cfg = {j.name: 0.0 for j in self._joints if j.is_actuated}
+        cfg.update({j.name: float(v) for j, v in zip(self._actuated, arr, strict=True)})
         self.urdf.update_cfg(cfg)
 
     def write_mjcf(self, path: str | Path | None = None) -> Path:
         """Persist the MJCF XML to ``path`` (or a temp file) and return the path.
-
         Newton's MJCF backend (``ModelBuilder.add_mjcf``) requires a file
         path, not a string — this method is the bridge.  Temp-file outputs
         are tagged with the robot name so they're obvious in ``/tmp``.
@@ -161,9 +149,6 @@ class URDFRobotModel(RobotModel):
         out = Path(path)
         out.write_text(self.mjcf_xml, encoding="utf-8")
         return out
-
-
-# --------------------------------------------------------------------------- public API
 
 
 def load_robot(
@@ -218,9 +203,8 @@ def load_robot(
         urdf = yourdfpy.URDF.load(
             str(preset.urdf_path),
             mesh_dir=search_paths[0] if search_paths else None,
-            # Extra lookup directories beyond ``mesh_dir`` — yourdfpy walks them
-            # in order.  Pushing all declared paths in makes the loader tolerant
-            # of URDFs authored with either ``package://`` or bare relative paths.
+
+
             filename_handler=_build_filename_handler(preset.urdf_path, search_paths),
             build_collision_scene_graph=build_collision_scene,
             load_meshes=True,
@@ -242,9 +226,8 @@ def load_robot(
         try:
             mujoco_model, mjcf_xml = _compile_mjcf(preset.urdf_path, search_paths)
         except Exception as err:
-            # URDF→MJCF can legitimately fail on URDFs with features mujoco
-            # doesn't support (e.g. transmission tags, SDF-only fields) —
-            # report but don't block UI-only paths.
+
+
             _log.warning(
                 "URDF→MJCF compilation failed for %s: %s.  UI rendering will "
                 "still work but Newton simulation/IK will be unavailable.",
@@ -263,9 +246,6 @@ def load_robot(
         mjcf_xml=mjcf_xml,
         mujoco_model=mujoco_model,
     )
-
-
-# --------------------------------------------------------------------------- internals
 
 
 def _resolve_mesh_search_paths(preset: RobotPreset) -> list[Path]:
@@ -325,26 +305,23 @@ def _build_filename_handler(urdf_path: Path, search_paths: list[Path]):
 
     def _handler(fname: str) -> str:
         if fname.startswith("package://"):
-            # ``package://unitree_g1/meshes/foo.stl`` → ``meshes/foo.stl``.
+
             rest = fname[len("package://"):]
             _pkg, _, tail = rest.partition("/")
             fname = tail or rest
-        # Absolute path or already resolvable — let yourdfpy have it.
         candidate = Path(fname)
         if candidate.is_absolute() and candidate.is_file():
             return str(candidate)
-        # Relative: try each declared root, then URDF parent.
         for root in [*search_paths, urdf_path.parent]:
             trial = root / fname
             if trial.is_file():
                 return str(trial)
-            # Sometimes URDFs nest ``meshes/foo.stl`` from the urdf parent;
-            # other times they write ``foo.stl`` and expect a sibling
-            # ``meshes/`` directory.  Try both.
+
+
             trial_meshes = root / "meshes" / Path(fname).name
             if trial_meshes.is_file():
                 return str(trial_meshes)
-        return fname  # fall through — yourdfpy will log a missing-mesh warning
+        return fname
 
     return _handler
 
@@ -357,7 +334,7 @@ def _collect_links(urdf: yourdfpy.URDF) -> tuple[LinkInfo, ...]:
     means the same thing across tools.
     """
     out: list[LinkInfo] = []
-    # Build parent and child-joint lookups up front.
+
     parent_of: dict[str, str | None] = {}
     children: dict[str, list[str]] = {}
     for joint in urdf.robot.joints:
@@ -383,10 +360,10 @@ def _collect_joints(urdf: yourdfpy.URDF) -> tuple[JointInfo, ...]:
         out.append(
             JointInfo(
                 name=joint.name,
-                joint_type=joint.type,  # type: ignore[arg-type]
+                joint_type=joint.type,
                 parent_link=joint.parent,
                 child_link=joint.child,
-                axis=axis,  # type: ignore[arg-type]
+                axis=axis,
                 limit_lower=getattr(lim, "lower", None) if lim is not None else None,
                 limit_upper=getattr(lim, "upper", None) if lim is not None else None,
                 velocity_limit=getattr(lim, "velocity", None) if lim is not None else None,
@@ -405,7 +382,7 @@ def _find_base_link(
     roots at parse time, so this is just bookkeeping.
     """
     try:
-        return urdf.base_link  # yourdfpy provides this directly
+        return urdf.base_link
     except AttributeError:
         pass
     roots = [link for link in links if link.parent is None]
@@ -456,16 +433,14 @@ def _order_actuated(
             f"not an actuated joint in the URDF.  Available: "
             f"{sorted(by_name)}"
         )
-    # Any extra actuated joints that *weren't* listed are silently dropped —
-    # users occasionally want to retarget a subset (e.g. no face joints).
-    # We warn so they notice on import.
+
     missing = set(by_name) - set(dof_order)
     if missing:
         _log.info(
             "robot %s: %d actuated joint(s) present in URDF but not in "
             "dof_order (will be omitted from CSV export): %s",
-            # We don't have preset.name here — log the joint names so the
-            # user can cross-reference.
+
+
             "<unknown>", len(missing), sorted(missing),
         )
     return tuple(ordered)
@@ -525,8 +500,6 @@ def _compile_mjcf(
     urdf_dir = urdf_path.parent
     needs_persist = urdf_needs_persisted_fixes(urdf_path)
 
-    # URDFs already normalised on disk (e.g. after web ingest) must compile in
-    # place — a temp copy under /tmp breaks relative mesh paths like meshes/Foo.STL.
     if not needs_persist:
         ensure_urdf_meshes_resolvable(urdf_path, search_dirs=dirs)
         model = mujoco.MjModel.from_xml_path(str(urdf_path))

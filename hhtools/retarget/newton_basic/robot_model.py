@@ -215,6 +215,7 @@ class NewtonRobotContext:
     num_envs: int
     joint_dof_count: int
     joint_coord_count: int
+    dof_coord_indices: tuple[int, ...]
     # The base joint of the articulation is a free (6-DoF) root joint by
     # default; ``root_coord_count == 7`` means (tx, ty, tz, qx, qy, qz, qw),
     # same layout as our CSV schema.  We surface it so the pipeline /
@@ -290,6 +291,7 @@ def build_newton_model(
     num_envs: int = 1,
     prefer_mjcf: bool = False,
     add_ground_plane: bool = True,
+    device: str | None = None,
 ) -> NewtonRobotContext:
     """Build a :class:`newton.Model` from a :class:`URDFRobotModel`.
 
@@ -308,9 +310,12 @@ def build_newton_model(
             Kept for backwards compatibility of call sites.
         add_ground_plane: Whether to add a ground plane to the builder (useful
             for collision / rendering; unused by the IK objectives we ship).
+        device: Optional Warp device used for all finalized model arrays.
+            ``None`` uses Warp's current device.
     """
     preset = robot.preset
     single_builder = newton.ModelBuilder()
+    floating_base = bool(getattr(preset, "floating_base", True))
 
     up_axis = {"X": newton.Axis.X, "Y": newton.Axis.Y, "Z": newton.Axis.Z}.get(
         preset.up_axis, newton.Axis.Z
@@ -320,12 +325,15 @@ def build_newton_model(
     mjcf_path: Path | None = None
 
     def _load_urdf(builder: "newton.ModelBuilder") -> None:
-        safe_urdf = _floating_base_safe_urdf(preset.urdf_path)
+        safe_urdf = (
+            _floating_base_safe_urdf(preset.urdf_path)
+            if floating_base else preset.urdf_path
+        )
         try:
             builder.add_urdf(
                 str(safe_urdf),
                 up_axis=up_axis,
-                floating=True,
+                floating=floating_base,
                 collapse_fixed_joints=False,
                 enable_self_collisions=False,
             )
@@ -391,7 +399,7 @@ def build_newton_model(
     if add_ground_plane:
         multi_builder.add_ground_plane()
 
-    model = multi_builder.finalize(requires_grad=True)
+    model = multi_builder.finalize(device=device, requires_grad=True)
 
     # Newton's body_label holds ``env<i>/body_name`` entries; we want the leaf
     # names for the *first* env to resolve ``ik_map`` slots against.  The
@@ -402,6 +410,16 @@ def build_newton_model(
     # expected per-env slice.  We only need env-0 links for mapping.
     env0_fq = all_labels[:num_bodies_per_env]
     env0_leaf = [_leaf(n) for n in env0_fq]
+    label_to_joint = {
+        _leaf(str(label)): i for i, label in enumerate(model.joint_label)
+    }
+    q_start = model.joint_q_start.numpy()
+    root_coord_count = 7 if floating_base else 0
+    dof_coord_indices = tuple(
+        int(q_start[label_to_joint[name]] - root_coord_count)
+        for name in robot.dof_names()
+        if name in label_to_joint
+    )
 
     mapping_warnings: list[str] = []
     ik_mapping: IKMapping | None = None
@@ -422,8 +440,10 @@ def build_newton_model(
         num_envs=max(1, num_envs),
         joint_dof_count=joint_dof_count,
         joint_coord_count=joint_coord_count,
-        # Newton floating-base root joint puts 7 coords (xyz + xyzw) first.
-        root_coord_count=7,
+        # Newton's free root uses 7 coordinates; a fixed-base articulation has
+        # no root block in its trajectory.
+        root_coord_count=root_coord_count,
+        dof_coord_indices=dof_coord_indices,
         mjcf_path=mjcf_path,
         used_mjcf=used_mjcf,
         ik_mapping=ik_mapping,

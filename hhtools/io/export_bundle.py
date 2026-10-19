@@ -1,5 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 hhtools contributors
-# SPDX-License-Identifier: Apache-2.0
 """Browser-facing retarget export bundles (OMOMO / parc_ms style folders).
 
 When a clip has terrain or interaction objects, exports are packaged as::
@@ -258,6 +256,20 @@ def _robot_pkl_blob(
     sample_rate: float,
     meta: dict,
 ) -> dict[str, object]:
+    root_count = int(getattr(retargeted, "root_coord_count", 7))
+    if root_count < 7:
+        dof_all = list(getattr(retargeted, "dof_names", []) or [])
+        return {
+            "joint_q": np.asarray(joint_q, dtype=np.float32),
+            "dof_names": dof_all,
+            "sample_rate": float(sample_rate),
+            "name": str(getattr(retargeted, "name", "retargeted")),
+            "root_coord_count": root_count,
+            "root_quat_format": "none",
+            "smpl_scale": float(meta.get("smpl_scale", 1.0)),
+            "z_offset": float(meta.get("source_z_min", 0.0)),
+            "meta": {k: str(v) for k, v in meta.items()},
+        }
     joint_q_wxyz = np.empty_like(joint_q)
     joint_q_wxyz[:, :3] = joint_q[:, :3]
     joint_q_wxyz[:, 3] = joint_q[:, 6]
@@ -277,6 +289,7 @@ def _robot_pkl_blob(
         "sample_rate": float(sample_rate),
         "name": str(getattr(retargeted, "name", "retargeted")),
         "root_quat_format": "wxyz",
+        "root_coord_count": root_count,
         "smpl_scale": float(meta.get("smpl_scale", 1.0)),
         "z_offset": float(meta.get("source_z_min", 0.0)),
         "meta": {k: str(v) for k, v in meta.items()},
@@ -299,9 +312,8 @@ def _object_track_blob(
     oq_wxyz[..., 0] = oq_xyzw[..., 3]
     oq_wxyz[..., 1:] = oq_xyzw[..., :3]
     mesh_name = Path(str(getattr(ob, "mesh_path", "") or "")).name
-    # Cuboid extents follow the same mesh scaling as the exported OBJ
-    # (``ob.scale * smpl_scale``); they are dimensions, not positions, so the
-    # ``z_offset`` grounding shift does not apply.
+
+
     extents = (
         np.asarray(getattr(ob, "extents", (0.0, 0.0, 0.0)), dtype=np.float64).reshape(3)
         * float(getattr(ob, "scale", 1.0))
@@ -367,9 +379,8 @@ def _save_object_track_csv(
             writer.writerow(OBJECT_CSV_HEADER)
         for frame in range(num_frames):
             q = quats_wxyz[frame]
-            # Repeat the constant object dimensions on every row.  This keeps a
-            # clipped or concatenated CSV self-describing even when its OBJ
-            # sidecar or metadata header is not available to the consumer.
+
+
             writer.writerow([
                 f"{times[frame]:.6f}",
                 f"{positions[frame, 0]:.6f}",
@@ -433,7 +444,6 @@ def _export_scaled_object_mesh(ob, dst: Path, mesh_scale: float) -> bool:
         return False
     try:
         import trimesh
-
         loaded = trimesh.load(str(src), force="mesh", process=False)
         verts = np.asarray(getattr(loaded, "vertices", np.zeros((0, 3))), dtype=np.float64)
         faces = np.asarray(getattr(loaded, "faces", np.zeros((0, 3))), dtype=np.int64)
@@ -644,7 +654,6 @@ def apply_export_time_window(
         else 0
     )
     if source_motion is not None and src_n > 0 and src_n != jq.shape[0]:
-        # Map retargeted frame window onto the source frame grid.
         src_i0 = int(round(i0 * src_n / jq.shape[0]))
         src_i1 = int(round(i1 * src_n / jq.shape[0]))
         motion2 = slice_motion_frames(source_motion, src_i0, src_i1)
@@ -724,9 +733,8 @@ def write_retarget_export_bundle(
     clip_dir = resolve_clip_export_dir(
         out_root, stem, source_path, has_scene=has_scene,
     )
-    # Flat AMASS / LAFAN-style clips share one ``out_root`` (``clip_dir == out_root``).
-    # Wiping ``clip_dir`` before each write would delete every prior CSV in a batch
-    # export — only replace dedicated per-clip bundle directories.
+
+
     flat_shared_dir = (
         not has_scene
         and clip_dir.resolve() == out_root.resolve()
@@ -763,7 +771,6 @@ def write_retarget_export_bundle(
             pickle.dump(blob, f)
     else:
         from hhtools.io.robot_csv import save_robot_csv
-
         trajectory_path = ensure_export_path(out_root, clip_dir / f"{stem}.csv")
         save_robot_csv(
             trajectory_path,
@@ -807,10 +814,7 @@ def write_retarget_export_bundle(
         )
         return clip_dir
 
-    # ``make_archive(out_root/stem, root_dir=clip_dir)`` hangs when
-    # ``clip_dir == out_root`` (batch upload layout: ``out/sub10/sub10/``):
-    # the ``.zip`` is created *inside* the tree being walked and gets re-
-    # included.  ``zip_directory`` always writes the archive beside ``clip_dir``.
+
     zip_path = ensure_export_path(out_root, zip_directory(clip_dir, stem))
     shutil.rmtree(clip_dir, ignore_errors=True)
     _log.info(

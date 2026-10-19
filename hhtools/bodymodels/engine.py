@@ -15,11 +15,10 @@ provide them via the :func:`hhtools.bodymodels.paths.find_body_model` search cha
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal
-
-ProgressCallback = Callable[[float, str], None]
+from typing import Any, Literal
 
 import numpy as np
 
@@ -30,6 +29,8 @@ from hhtools.bodymodels.paths import find_body_model
 from hhtools.core.hierarchy import Hierarchy
 from hhtools.core.math import quaternion as Q
 from hhtools.core.motion import Motion
+
+ProgressCallback = Callable[[float, str], None]
 
 Family = Literal["smpl", "smplh", "smplx"]
 Gender = Literal["neutral", "male", "female"]
@@ -97,6 +98,10 @@ class SmplxEngine:
         if family in ("smplh", "smplx"):
             kwargs["use_pca"] = use_pca
             kwargs["flat_hand_mean"] = True
+        if family == "smplh" and resolved.suffix.lower() == ".npz":
+            data_struct = _amass_smplh_data_struct(resolved, smplx, use_pca=use_pca)
+            if data_struct is not None:
+                kwargs["data_struct"] = data_struct
         self._model = smplx.create(str(resolved.parent.parent), **kwargs)
         self._model = self._model.eval()
         # Cache per-joint parent array for downstream FK.
@@ -285,11 +290,15 @@ class SmplxEngine:
             # comment below). SMPL-H / SMPL-X use 45 axis-angle dims per hand when
             # ``use_pca=False`` (our default).
             hand_dim = 45
-            lh = params.hand_pose_left[start:end] if params.hand_pose_left is not None else np.zeros(
-                (chunk, hand_dim), dtype=np.float32
+            lh = (
+                params.hand_pose_left[start:end]
+                if params.hand_pose_left is not None
+                else np.zeros((chunk, hand_dim), dtype=np.float32)
             )
-            rh = params.hand_pose_right[start:end] if params.hand_pose_right is not None else np.zeros(
-                (chunk, hand_dim), dtype=np.float32
+            rh = (
+                params.hand_pose_right[start:end]
+                if params.hand_pose_right is not None
+                else np.zeros((chunk, hand_dim), dtype=np.float32)
             )
             kwargs["left_hand_pose"] = t(lh)
             kwargs["right_hand_pose"] = t(rh)
@@ -399,6 +408,41 @@ class SmplxEngine:
             else:
                 globals_[:, j] = Q.multiply(globals_[:, p], local_quats[:, j])
         return globals_
+
+
+def _amass_smplh_data_struct(model_path: Path, smplx: Any, *, use_pca: bool) -> Any | None:
+    """Adapt the SMPL-H NPZ distributed for AMASS to the ``smplx`` package.
+
+    AMASS' ``smplh.tar.xz`` contains the complete LBS model but omits the MANO hand PCA
+    components and means.  ``smplx.SMPLH`` accesses those fields during construction even when
+    PCA is disabled and a flat hand mean is requested.  In that non-PCA mode the values are not
+    used by the forward pass, so zero placeholders make the official AMASS weights load without
+    modifying the licensed files on disk.
+    """
+    hand_fields = {
+        "hands_componentsl",
+        "hands_componentsr",
+        "hands_meanl",
+        "hands_meanr",
+    }
+    with np.load(model_path, allow_pickle=True) as archive:
+        missing = hand_fields.difference(archive.files)
+        if not missing:
+            return None
+        if use_pca and {"hands_componentsl", "hands_componentsr"}.intersection(missing):
+            raise ValueError(
+                f"SMPL-H model {model_path} is the AMASS distribution without MANO hand PCA "
+                "components; construct SmplxEngine with use_pca=False"
+            )
+        model_data = {key: archive[key] for key in archive.files}
+
+    component_shape = (6, 45)
+    mean_shape = (45,)
+    model_data.setdefault("hands_componentsl", np.zeros(component_shape, dtype=np.float32))
+    model_data.setdefault("hands_componentsr", np.zeros(component_shape, dtype=np.float32))
+    model_data.setdefault("hands_meanl", np.zeros(mean_shape, dtype=np.float32))
+    model_data.setdefault("hands_meanr", np.zeros(mean_shape, dtype=np.float32))
+    return smplx.utils.Struct(**model_data)
 
 
 # Legacy shim retained for backwards compatibility with M3 scaffold tests -- now forwards to

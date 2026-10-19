@@ -40,7 +40,7 @@ def _compute_r2r_scaled_preview(
         )
     )
     z_correction = resolve_scaled_overlay_z_correction(motion, scaler, ratio)
-    # Keep R2R ankles at their source mesh-sole-relative height.
+
     return _uniform_scaled_preview_fallback(
         motion,
         cfg,
@@ -73,6 +73,9 @@ def _align_scaled_preview_to_robot_playback(
     idx = trajectory.get("frame_indices") or [0]
     f0 = int(idx[0]) if idx else 0
     root = np.asarray(retargeted.root_trajectory[f0], dtype=np.float64)
+    if root.size < 7:
+        root = np.zeros(7, dtype=np.float64)
+        root[6] = 1.0
     mesh_lift = float(frames[0].get("mesh_z_lift") or 0.0)
     ret_dof_names = list(retargeted.dof_names)
     dof0 = np.asarray(retargeted.dof_trajectory[f0], dtype=np.float64)
@@ -265,7 +268,7 @@ def _run_dataset_robot_preview_job(job: Any, body: dict[str, Any], state: Any) -
         job.progress = 1.0
         job.message = "完成"
         job.mark_terminal("done")
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         _log.exception("dataset robot preview failed")
         job.error = str(err)
         job.mark_terminal("error")
@@ -290,7 +293,7 @@ def _ensure_robot_model(state: Any, robot_name: str | None):
             model = load_robot(preset, compile_mjcf=False)
             state.robots[preset.name] = model
             return model
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _log.debug("robot preset %r unavailable: %s", name, err)
     raise ValueError("无法加载机器人模型以预览轨迹；请先在「机器人」面板加载对应机器人")
 
@@ -410,7 +413,7 @@ def _load_robot_export_for_web(
             robot_path=path,
             terrain_loader=obj_to_heightfield,
         )
-    except Exception as err:  # noqa: BLE001 - scene is optional for preview
+    except Exception as err:
         _log.warning("robot export scene attach skipped for %s: %s", path, err)
 
     if cb is not None:

@@ -50,7 +50,7 @@ function GroundGrid() {
   );
 }
 
-/** Advances the cursor owned by Stage inside the one R3F render loop. */
+
 function PlaybackClock({
   timeline,
   playback,
@@ -197,7 +197,7 @@ function R2rLayers({
   );
 }
 
-/** Static scene content migrated from the legacy renderer bootstrap. */
+
 function StageScene({
   motion,
   scaledMotion,
@@ -311,10 +311,22 @@ function StageScene({
         calibration={calibration}
         interactionLocked={manipulating}
       />
-      <ambientLight intensity={0.55} />
-      <hemisphereLight args={[0xffffff, 0x8899aa, 1.35]} />
-      <directionalLight position={[3, 6, 4]} intensity={1.5} />
-      <directionalLight position={[-3, 4, -2]} intensity={0.85} />
+      <ambientLight intensity={0.35} />
+      <hemisphereLight args={[0xffffff, 0x8899aa, 0.9]} />
+      <directionalLight
+        position={[3, 6, 4]}
+        intensity={2.2}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={20}
+        shadow-camera-left={-5}
+        shadow-camera-right={5}
+        shadow-camera-top={5}
+        shadow-camera-bottom={-5}
+        shadow-bias={-0.0005}
+      />
+      <directionalLight position={[-3, 4, -2]} intensity={1.2} />
 
       <GroundGrid />
       <group name="hhtools-world" rotation={[-Math.PI / 2, 0, 0]}>
@@ -373,8 +385,8 @@ function StageScene({
               <SkeletonLayer
                 motion={scaledMotion}
                 visible={scaledSkeletonVisible}
-                // Before IK there is no robot timeline to compare against, so
-                // keep the optional scaled preview on its reference frame.
+
+
                 playback={robotTrajectory ? playback : undefined}
                 variant="scaled"
                 name="scaled-skeleton"
@@ -453,7 +465,7 @@ export function StageCanvas({
       id="three-canvas"
       data-stage-renderer="react-three-fiber"
       className="absolute inset-0 block h-full w-full"
-      flat
+      shadows={THREE.PCFSoftShadowMap}
       dpr={[1, 2]}
       camera={{
         fov: 50,
@@ -463,7 +475,9 @@ export function StageCanvas({
       }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
-        // Keep the CSS stage background visible through the transparent canvas.
+
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.0;
         gl.setClearColor(0x000000, 0);
       }}
     >

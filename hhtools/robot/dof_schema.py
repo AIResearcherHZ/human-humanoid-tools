@@ -43,7 +43,8 @@ def header_columns(robot: RobotModel) -> list[str]:
     ``robot.yaml.dof_order`` — see :func:`hhtools.robot.loader._order_actuated`.
     """
     dof_columns = [f"dof_{name}" for name in robot.dof_names()]
-    return ["time", *_ROOT_COLUMNS, *dof_columns]
+    root_columns = _ROOT_COLUMNS if bool(getattr(robot.preset, "floating_base", True)) else ()
+    return ["time", *root_columns, *dof_columns]
 
 
 def header_csv(robot: RobotModel) -> str:

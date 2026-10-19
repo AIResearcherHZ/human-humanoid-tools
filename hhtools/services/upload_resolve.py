@@ -228,11 +228,13 @@ def _load_mimic(  # noqa: PLR0911 - dataset loaders intentionally return at dete
 
     suf = path.suffix.lower()
     dataset = infer_mimic_dataset(path)
+    primary_error: Exception | None = None
 
     if suf == ".npz":
         try:
             return _load_via_dataset_adapter(path, dataset, progress=progress)
-        except Exception:
+        except Exception as exc:
+            primary_error = exc
             pass
         for fallback in ("unified_npz", "amass"):
             if fallback == dataset:
@@ -272,11 +274,22 @@ def _load_mimic(  # noqa: PLR0911 - dataset loaders intentionally return at dete
                 bone_names=motion.hierarchy.bone_names,
             )
         return motion, dataset
-    except Exception:
+    except Exception as exc:
+        if primary_error is None:
+            primary_error = exc
         pass
-    motion, loaded_dataset = load_via_adapter(path)
-    if motion is not None:
-        return motion, loaded_dataset or dataset
+    try:
+        motion, loaded_dataset = load_via_adapter(path)
+        if motion is not None:
+            return motion, loaded_dataset or dataset
+    except Exception as exc:
+        if primary_error is None:
+            primary_error = exc
+
+    if primary_error is not None:
+        raise ValueError(
+            f"could not load {path.name} as {dataset}: {primary_error}"
+        ) from primary_error
     raise ValueError(f"could not load {path.name}")
 
 

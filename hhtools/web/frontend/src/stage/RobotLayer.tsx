@@ -145,11 +145,13 @@ function fallbackResource(robot: StageRobotPayload): RobotResource {
   for (const link of robot.links) {
     const zero = matrix4(robot.link_transforms_zero[link]);
     zeroInverse[link] = zero.clone().invert();
-    // A material per link keeps calibration tint local to the selected link.
+
     const mesh = new THREE.Mesh(
       geometry,
       createRobotMaterial(ROBOT_VISUAL.fallbackColor),
     );
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.matrixAutoUpdate = false;
     mesh.matrix.copy(zero);
     root.add(mesh);
@@ -212,11 +214,13 @@ function applyCalibrationHighlights(
   }
 }
 
-/** The original workbench intentionally gives every robot one neutral material. */
+
 function applyRobotMaterial(
   mesh: THREE.Mesh,
   detachedMaterials: THREE.Material[],
 ): void {
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   const original = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
   detachedMaterials.push(...original);
   mesh.material = Array.isArray(mesh.material)
@@ -260,7 +264,9 @@ async function glbResource(robot: StageRobotPayload): Promise<RobotResource> {
         unmappedMeshes += 1;
         continue;
       }
-      mesh.matrixAutoUpdate = false;
+      mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.matrixAutoUpdate = false;
       if (!mesh.geometry.getAttribute("normal")) {
         mesh.geometry.computeVertexNormals();
       }
@@ -476,8 +482,7 @@ function RobotObject({
     return () => onPoseReaderChange?.(null);
   }, [onPoseReaderChange, poseReader]);
 
-  // Pose the root before the first rendered frame so camera bounds already
-  // include ground_offset_z when the asynchronously loaded object appears.
+
   useLayoutEffect(() => {
     if (!group.current) return;
     lastFrame.current = null;
@@ -551,7 +556,7 @@ function RobotObject({
   );
 }
 
-/** Loads one robot model and optionally drives it from an H2R/R2R trajectory. */
+
 export function RobotLayer({
   robot,
   trajectory = null,

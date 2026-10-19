@@ -17,7 +17,7 @@ export type CompleteBodyMeshPayload = StageBodyMeshPayload & {
   readonly triangles: readonly (readonly [number, number, number])[];
 };
 
-/** Decode the backend's gzip/base64 vertex cache in browsers and Electron. */
+
 export async function decodeBodyMeshVertices(encoded: string): Promise<Float32Array> {
   if (typeof globalThis.atob !== "function") {
     throw new Error("Body mesh decoding requires browser base64 support");
@@ -100,6 +100,8 @@ export async function createBodyMeshResource(
       flatShading: true,
     });
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.name = "source-body-mesh";
     mesh.frustumCulled = false;
     return {
@@ -115,7 +117,7 @@ export async function createBodyMeshResource(
   }
 }
 
-/** Copy one interpolated frame into the live dynamic position attribute. */
+
 export function setBodyMeshFrame(resource: BodyMeshResource, frame: number): void {
   const maximum = resource.numFrames - 1;
   const safeFrame = Number.isFinite(frame)

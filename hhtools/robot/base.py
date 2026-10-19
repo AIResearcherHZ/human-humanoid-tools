@@ -145,6 +145,7 @@ class RobotPreset:
     up_axis: Literal["X", "Y", "Z"] = "Z"
     forward_axis: Literal["X", "Y", "Z"] = "X"
     dof_order: tuple[str, ...] = ()
+    floating_base: bool = True
     meta: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -157,6 +158,10 @@ class RobotPreset:
         the canonical example).
         """
         return self.urdf_path is not None and self.urdf_path.is_file()
+
+    @property
+    def fixed_base(self) -> bool:
+        return not self.floating_base
 
 
 # --------------------------------------------------------------------------- ABC

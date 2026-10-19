@@ -22,7 +22,7 @@ import {
 interface EnvironmentLayerProps {
   motion: StageMotionPayload | null;
   visible: boolean;
-  /** Shared cursor keeps props synchronized with skeleton and body playback. */
+
   playback?: StagePlaybackRef;
   timeline?: StageTimelinePayload | null;
   variant?: EnvironmentVisualVariant;
@@ -39,7 +39,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-/** Resolve a fractional index without interpolating across a sparse gap. */
+
 function resolveFrame(
   frameIndices: readonly number[] | undefined,
   frame: number,
@@ -98,7 +98,7 @@ function rgbToHex(color: StageObjectPayload["color"], fallback: number): number 
   if (!color || color.length < 3 || color.some((value) => !Number.isFinite(value))) {
     return fallback;
   }
-  // SceneObject's transport contract uses integer RGB channels in 0..255.
+
   const channels = color.map((value) => clamp(value, 0, 255));
   return (Math.round(channels[0]) << 16)
     | (Math.round(channels[1]) << 8)
@@ -113,7 +113,7 @@ function validTerrain(terrain: StageTerrainPayload | null | undefined): terrain 
   );
 }
 
-/** Declarative triangulated terrain. Coordinates remain in hhtools Z-up space. */
+
 function TerrainMesh({
   terrain,
   variant,
@@ -142,9 +142,7 @@ function TerrainMesh({
     return values;
   }, [terrain]);
 
-  // BufferGeometry does not derive normals when attributes are attached from
-  // JSX. Recompute them whenever a new terrain payload is published so the
-  // standard material receives the same shaded mesh as the legacy renderer.
+
   useEffect(() => {
     const geometry = geometryRef.current;
     if (!geometry) return;
@@ -153,7 +151,7 @@ function TerrainMesh({
   }, [positions, indices]);
 
   return (
-    <mesh name="source-terrain">
+    <mesh name="source-terrain" receiveShadow>
       <bufferGeometry ref={geometryRef}>
         <bufferAttribute
           attach="attributes-position"
@@ -224,7 +222,7 @@ function objectMeshUrl(
   return `/api/object_glb?${query.toString()}`;
 }
 
-/** Use the real prop mesh when available, retaining the box while it loads. */
+
 function InteractionObject({
   object,
   index,
@@ -268,11 +266,17 @@ function InteractionObject({
           disposeObject(gltf.scene);
           return;
         }
+        gltf.scene.traverse((node) => {
+          if ((node as THREE.Mesh).isMesh) {
+            node.castShadow = true;
+            node.receiveShadow = true;
+          }
+        });
         setLoaded({ object, meshUrl, index, scene: gltf.scene });
       },
       undefined,
       () => {
-        // A box with the serialized extents is the deliberate mesh fallback.
+
       },
     );
 
@@ -295,7 +299,7 @@ function InteractionObject({
       {scene ? (
         <primitive object={scene} dispose={null} />
       ) : (
-        <mesh>
+        <mesh castShadow receiveShadow>
           <boxGeometry args={[...object.extents]} />
           <meshStandardMaterial
             color={rgbToHex(object.color, visual.objectColor)}
@@ -309,10 +313,7 @@ function InteractionObject({
   );
 }
 
-/**
- * Renders source terrain and interaction props independently from the body.
- * Props follow the motion timeline even when the skeleton/body layer is hidden.
- */
+
 export function EnvironmentLayer({
   motion,
   visible,
@@ -357,8 +358,8 @@ export function EnvironmentLayer({
     objects.forEach((object, index) => {
       const mesh = objectRefs.current[index];
       if (!mesh || object.positions.length === 0) return;
-      // Object tracks are normally sampled with the skeleton. Normalizing the
-      // cursor also handles sidecars that contain a different sample count.
+
+
       const objectMaximum = object.positions.length - 1;
       const normalized = sourceMaximum > 0
         ? (sourceFrame.first + sourceFrame.blend) / sourceMaximum
