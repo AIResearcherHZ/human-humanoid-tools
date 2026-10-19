@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 hhtools contributors
-# SPDX-License-Identifier: Apache-2.0
+
+
 """Interaction-mesh retarget pipeline: scaler + Laplacian MPC/SQP (MuJoCo).
 
 Architecture follows holosoma's InteractionMeshRetargeter:
@@ -51,9 +51,9 @@ from hhtools.robot.retarget_profile import build_scaler_config_for_robot
 
 _log = logging.getLogger(__name__)
 
-# Upper bound on frames sampled for the post-MPC alignment-quality diagnostic
-# (logging only).  Bounds a second full-clip ``mj_forward`` pass on long
-# terrain clips without changing the exported trajectory.
+
+
+
 _ALIGNMENT_DIAG_MAX_FRAMES = 256
 
 
@@ -64,6 +64,12 @@ class InteractionMeshPipeline:
     robot: URDFRobotModel
     scaler: HumanToRobotScaler
     cfg: InteractionMeshPipelineConfig
+
+    def __post_init__(self) -> None:
+        if self.robot.preset.fixed_base:
+            raise ValueError(
+                "interaction_mesh 需要浮动基座；固定基座机器人请使用 newton 后端"
+            )
 
     @classmethod
     def from_calibration(
@@ -154,7 +160,7 @@ class InteractionMeshPipeline:
         dt = 1.0 / max(float(framerate), 1.0)
         max_step = max(0.0, float(self.cfg.foot_lateral_max_step_rad_s) * dt)
         for f in range(out.shape[0]):
-            # Root up-vector z: skip while rolling / inverted.
+
             if out.shape[1] >= 7:
                 up = Q.to_matrix(out[f, 3:7][None, :])[0] @ np.array(
                     [0.0, 0.0, 1.0], dtype=np.float64
@@ -173,7 +179,7 @@ class InteractionMeshPipeline:
             )
             if max_step > 0.0:
                 delta = np.asarray(desired, dtype=np.float32) - before
-                # Only the actuated part may move (root stays).
+
                 if before.size > 7:
                     delta[:7] = 0.0
                     delta[7:] = np.clip(delta[7:], -max_step, max_step)
@@ -266,8 +272,8 @@ class InteractionMeshPipeline:
             d = target - prev
             d = (d + np.pi) % (2.0 * np.pi) - np.pi
             if abs(d) > teleport:
-                # Isolated spike (next frame returns near prev) → hold.
-                # Sustained stand-up pose change → rate-limit toward target.
+
+
                 nxt = float(raw[min(f + 1, out.shape[0] - 1), c])
                 d_next = nxt - prev
                 d_next = (d_next + np.pi) % (2.0 * np.pi) - np.pi
@@ -315,7 +321,7 @@ class InteractionMeshPipeline:
             )
         return out
 
-    # Back-compat alias for anything that imported the old name.
+
     def _stabilize_yaw_after_mpc(self, joint_q, motion, *, framerate: float):
         return self._stabilize_joints_after_mpc(
             joint_q, motion, framerate=framerate,
@@ -379,7 +385,7 @@ class InteractionMeshPipeline:
         out = np.asarray(mapped_pos, dtype=np.float32, copy=True)
         prev_axis: np.ndarray | None = None
         for f in range(out.shape[0]):
-            # Upright gate: hip/pelvis clearly above the feet.
+
             foot_zs = [float(out[f, a, 2]) for a, _ in foot_pairs] + [
                 float(out[f, b, 2]) for _, b in foot_pairs
             ]
@@ -403,7 +409,7 @@ class InteractionMeshPipeline:
             if n < 1e-4:
                 continue
             axis = axis / n
-            # Keep the lateral axis in one hemisphere across upright frames.
+
             if prev_axis is not None and float(np.dot(axis, prev_axis)) < 0.0:
                 axis = -axis
             prev_axis = axis.copy()
@@ -432,7 +438,7 @@ class InteractionMeshPipeline:
         """
         from hhtools.robot.ik_map_policy import filter_ik_map_for_motion
 
-        # OmniContact + G1: drop head so waist_pitch does not track head bob.
+
         ik_map = filter_ik_map_for_motion(
             self.robot.preset.ik_map,
             self.robot.preset.name,
@@ -527,7 +533,7 @@ class InteractionMeshPipeline:
         """
         scaled_pos, _scaled_quat, z_min, smpl_scale = self._build_scaled_source_pose(motion)
         idx = np.array(source_indices, dtype=np.int32)
-        mapped = scaled_pos[:, idx, :].copy()  # (F, K, 3)
+        mapped = scaled_pos[:, idx, :].copy()
         return mapped, z_min, smpl_scale
 
     def _build_scaled_source_pose(
@@ -573,10 +579,10 @@ class InteractionMeshPipeline:
         all_pos = np.asarray(motion.positions, dtype=np.float32).copy()
         all_quat = np.asarray(motion.quaternions, dtype=np.float32).copy()
 
-        # Terrain / object clips must keep the historical all-joint floor so
-        # the heightfield ``z_offset`` and Laplacian anchors stay co-aligned
-        # with the human.  Flat-ground lie→stand uses
-        # :func:`retarget_source_floor_z_world` in Newton instead.
+
+
+
+
         if motion.terrain is not None or motion.objects:
             z_min = float(human_source_floor_z_world(motion))
         else:
@@ -592,9 +598,9 @@ class InteractionMeshPipeline:
         all_pos[:, :, 2] -= z_min
         all_pos *= smpl_scale
 
-        # OmniContact / 2-spine Mixamo: height-uniform scale leaves arms
-        # shorter than many humanoids.  Lengthen from the shoulders so
-        # wrist targets (and the yellow overlay) match robot arm reach.
+
+
+
         from hhtools.retarget.interaction_mesh.arm_reach import (
             maybe_boost_arm_reach_positions,
         )
@@ -632,9 +638,9 @@ class InteractionMeshPipeline:
             robot_links = self._validate_body_names_against_mujoco(
                 mj_model, robot_links, self.robot,
             )
-            # On grasping clips (interaction objects present) prioritise the
-            # wrist / hand-tip effector so a hand-less robot's wrist collision
-            # tip actually reaches the contact — the user's "首先要尽量接触到".
+
+
+
             grasping = bool(getattr(motion, "objects", None))
             hand_w = float(self.cfg.hand_contact_weight) if grasping else 1.0
             robot_points = build_contact_mpc_points(
@@ -678,15 +684,15 @@ class InteractionMeshPipeline:
             motion, z_min, smpl_scale,
         )
 
-        # Inject terrain heightfield surface samples as additional
-        # anchor vertices.  Holosoma builds the Delaunay tetrahedral
-        # mesh out of *both* human joints and terrain points so the
-        # Laplacian δ for each joint encodes its position relative to
-        # the static terrain — that's the only mechanism in this
-        # backend that anchors global root motion.  Without these
-        # anchors the cost is translation-invariant and the robot
-        # essentially stops walking even though its yellow source
-        # skeleton sweeps several metres.
+
+
+
+
+
+
+
+
+
         terrain_pts = self._build_terrain_anchor_points(
             motion, z_min, smpl_scale, num_frames=int(mapped_pos.shape[0]),
         )
@@ -713,25 +719,25 @@ class InteractionMeshPipeline:
             progress_callback=progress_callback,
         )
 
-        # Attach continuous source pelvis quaternions on **every** frame.
-        # The SQP locks the FREE-joint orientation to these values so the
-        # floating base cannot flip into another orientation basin during
-        # ground rolls (the root cause of stand-up leg / yaw teleports).
-        # Use the **raw** source quaternion (no ``source_body_quat``)
-        # because :meth:`_build_scaled_source_pose` and the heightfield
-        # transform also keep the source frame.
-        #
-        # Position-only datasets (OMOMO, holosoma, …) leave every joint
-        # quaternion at identity.  Locking the FREE joint to that identity
-        # freezes yaw for the whole clip — the actor looks "heading-locked"
-        # while the body still translates.  Skip the attach so SQP can yaw
-        # freely from position / Laplacian costs.
-        #
-        # OmniContact / 2-segment Mixamo BVH also skip: Mixamo ``Hips``
-        # local axes are (+Z forward, +Y up) after Y→Z, while the robot
-        # FREE joint is (+X forward, +Z up).  Copying the hips quat into
-        # the FREE joint tips the robot ~90° and folds the arms behind
-        # the back even though wrist *positions* are in front of the box.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         try:
             from hhtools.core.math import quaternion as Q
 
@@ -783,7 +789,7 @@ class InteractionMeshPipeline:
         if qs.ndim != 2 or qs.shape[0] == 0 or qs.shape[1] != 4:
             return False
         identity = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64)
-        # Same threshold as the scaler's position-only heading probe.
+
         return float(np.abs(qs - identity[None, :]).max()) >= 0.01
 
     @staticmethod
@@ -1082,19 +1088,19 @@ class InteractionMeshPipeline:
                 raw3d = scaled_pos[:, foot_i, :] - scaled_pos[:, anchor_idx, :]
                 xy = raw3d.copy()
                 xy[:, 2] = 0.0
-                # Two-stage denoise of the foot's anatomical forward
-                # direction:
-                #   1. small temporal box filter — kills per-frame XY
-                #      noise on rigs where the toe is mostly below the
-                #      ankle (BVH/LAFAN/Mixamo).  Without this, two
-                #      adjacent frames can flip the XY sign (≈180°)
-                #      even though the underlying motion is smooth.
-                #   2. per-frame fallback to ``body_heading[t]`` when
-                #      the smoothed XY is still effectively degenerate
-                #      (foot lifted, en pointe).  The fallback is
-                #      *per-frame* so that a degenerate frame in the
-                #      middle of a body rotation tracks the rotating
-                #      heading rather than freezing on frame 0.
+
+
+
+
+
+
+
+
+
+
+
+
+
                 xy_smooth = self._temporal_box_filter(xy, window=5)
                 xy_norm = np.linalg.norm(xy_smooth, axis=1)
                 raw_norm = np.linalg.norm(raw3d, axis=1)
@@ -1102,11 +1108,11 @@ class InteractionMeshPipeline:
                     xy_smooth, body_heading,
                     ref_norm=raw_norm, ratio_threshold=0.2,
                 )
-                # Belt-and-braces continuity guard: if a single frame
-                # still flipped past 90° relative to its neighbours
-                # (e.g. on a rig where the foot direction genuinely
-                # oscillates between ground contacts), nudge it back to
-                # the running average so the visualization stays stable.
+
+
+
+
+
                 fwd = self._enforce_directional_continuity(fwd, body_heading)
             else:
                 fwd = body_heading
@@ -1129,18 +1135,18 @@ class InteractionMeshPipeline:
             elbow_i = canonical_idx.get(f"{side}_elbow")
             body_heading = self._body_heading_forward(scaled_pos, canonical_idx)
             if hand_i is not None and hand_i != anchor_idx:
-                # The robot has no hand link: the wrist link's collision
-                # geometry terminates where a hand would be, and that
-                # collision tip is the de-facto end-effector (the robot
-                # ``wrist:hand_tip`` point already sits at the far end of the
-                # last wrist collision geom).  When the *source* rig carries a
-                # distinct hand joint past the wrist (OMOMO ``l_hand``/``r_hand``,
-                # grasping a chair/box), drive that robot tip to the human hand
-                # joint itself — i.e. target = anchor(wrist) + (hand − wrist) =
-                # hand — so the robot's physical hand-end reaches the actual
-                # contact point instead of stopping a collision-tip-length
-                # short at the wrist (the "still only a yellow skeleton touches
-                # the chair" artefact).
+
+
+
+
+
+
+
+
+
+
+
+
                 return (
                     scaled_pos[:, hand_i, :] - scaled_pos[:, anchor_idx, :]
                 ).astype(np.float32)
@@ -1148,12 +1154,12 @@ class InteractionMeshPipeline:
                 raw = scaled_pos[:, anchor_idx, :] - scaled_pos[:, elbow_i, :]
             else:
                 raw = body_heading
-            # No distinct hand joint (e.g. plain SMPL wrists are the tip):
-            # extend along the forearm by the robot collision-tip length.
-            # Same per-frame fallback logic as the foot path: when the arm
-            # is fully extended along the body's vertical axis the XY
-            # projection collapses, and we want to track the body heading
-            # at *that* frame rather than freeze on frame 0.
+
+
+
+
+
+
             fwd = self._normalise_vectors_per_frame(raw, body_heading)
             return (fwd * float(np.linalg.norm(local_offset))).astype(np.float32)
 
@@ -1183,11 +1189,11 @@ class InteractionMeshPipeline:
         if not motion.objects:
             return [], None
 
-        # Like ``_build_scaled_source_pose``, we keep objects in the
-        # source world frame (no ``source_body_quat`` rotation) so they
-        # stay aligned with the un-rotated terrain heightfield.  See
-        # the docstring of ``_build_scaled_source_pose`` for the
-        # parc_ms inverted-X bug this avoids.
+
+
+
+
+
         obj_positions: list[NDArray[np.float32]] = []
         obj_points: list[NDArray[np.float32]] = []
         for ob in motion.objects:
@@ -1267,10 +1273,10 @@ class InteractionMeshPipeline:
 
         hf = scaled_terrain.hf.astype(np.float32, copy=False)
 
-        # --- Stratum A: uniform grid (covers the whole footprint) ---
-        # Roughly half of the budget so we always have a regular
-        # backbone for Delaunay even when the heightfield is mostly
-        # flat (e.g. a single pit in an otherwise flat parkour map).
+
+
+
+
         K_uniform = max(8, K // 2)
         stride = max(1, int(np.floor(np.sqrt((nx * ny) / float(K_uniform)))))
         ix_u = np.arange(0, nx, stride, dtype=np.int32)
@@ -1278,20 +1284,20 @@ class InteractionMeshPipeline:
         gx_u, gy_u = np.meshgrid(ix_u, iy_u, indexing="ij")
         uni_idx = np.stack([gx_u.ravel(), gy_u.ravel()], axis=1)
 
-        # --- Stratum B: gradient-weighted samples (oversamples edges) ---
-        # ``np.gradient`` returns (gx, gy) with central differences in
-        # the interior and one-sided at borders — perfectly fine for a
-        # weighting score.  Squared magnitude amplifies sharp edges
-        # without going to infinity at any single cell.
+
+
+
+
+
         K_grad = max(0, K - uni_idx.shape[0])
         grad_idx: NDArray[np.int32] | None = None
         if K_grad > 0:
             gh_x, gh_y = np.gradient(hf)
             grad_sq = (gh_x.astype(np.float32) ** 2 + gh_y.astype(np.float32) ** 2)
-            # ``alpha`` keeps flat cells non-zero — without it, a clip
-            # whose terrain is mostly flat with one cliff would
-            # collapse every sample onto that cliff and Delaunay would
-            # produce a near-degenerate hull.
+
+
+
+
             alpha = max(1e-6, float(grad_sq.mean()) * 0.05)
             w = (grad_sq + alpha).reshape(-1)
             w = w / float(w.sum())
@@ -1303,13 +1309,13 @@ class InteractionMeshPipeline:
                 [flat_pick // ny, flat_pick % ny], axis=1,
             ).astype(np.int32)
 
-        # Merge uniform + gradient samples and dedupe.
+
         if grad_idx is not None and grad_idx.size > 0:
             all_idx = np.vstack([uni_idx.astype(np.int32), grad_idx])
         else:
             all_idx = uni_idx.astype(np.int32)
-        # Dedupe via Cantor pairing on (gx, gy) — keeps insertion order
-        # so the uniform backbone wins ties over gradient resamples.
+
+
         keys = all_idx[:, 0].astype(np.int64) * (ny + 1) + all_idx[:, 1].astype(np.int64)
         _, uniq_first = np.unique(keys, return_index=True)
         uniq_first.sort()
@@ -1442,18 +1448,18 @@ class InteractionMeshPipeline:
             if progress_callback is not None:
                 progress_callback("mpc", cur, tot)
 
-        # ------------------------------------------------------------------
-        # Collision strategy.  See :class:`InteractionMeshPipelineConfig`.
-        #
-        # The terrain is compiled as a MuJoCo ``<hfield>`` and the SQP
-        # picks up ``mj_geomDistance``-based hard inequality constraints
-        # in OSQP.  This is the only path: soft penalties on a
-        # translation-invariant Laplacian cost cause the floating base
-        # to drop / teleport, which is the failure mode this refactor
-        # exists to fix.  When ``enable_collision=False`` (or the
-        # collision model fails to compile) the SQP runs without
-        # terrain awareness — fine for flat-ground clips.
-        # ------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
         coll_model = None
         coll_data = None
         tmp_terrain_files: list[Path] = []
@@ -1541,7 +1547,7 @@ class InteractionMeshPipeline:
             self.cfg.post_smooth_leg_joints_after_stabilize
             and joint_q.shape[0] > 1
         ):
-            # Causal low-pass on packed leg columns (after clamp+rate-limit).
+
             beta = float(self.cfg.post_smooth_leg_beta_after)
             if beta > 0.0:
                 _leg_keys = ("hip", "knee", "ankle", "thigh", "calf", "leg", "shank")
@@ -1559,48 +1565,48 @@ class InteractionMeshPipeline:
                             out_s[t, c] = (1.0 - b) * out_s[t, c] + b * out_s[t - 1, c]
                     joint_q = out_s
 
-        # ---- Diagnostic: per-clip alignment quality vs. yellow-skeleton ----
-        # Measures the residual between every retargeted robot
-        # contact-point world position and its scaled-source target
-        # (i.e. the yellow-overlay landmark it was supposed to hit).
-        # This is the same quantity the user complains about when
-        # they say "the robot doesn't track the yellow skeleton" —
-        # logging it explicitly turns "feels off" into "12 cm at the
-        # left wrist", which is far easier to debug.  Cheap (one
-        # ``mj_forward`` per frame in the pre-existing collision
-        # model) and only runs once per clip, so the cost is
-        # negligible relative to the SQP itself.
+
+
+
+
+
+
+
+
+
+
+
         align_summary = self._summarise_alignment_quality(
             traj, targets, robot_points,
             mj_model=coll_model if coll_model is not None else mj,
         )
 
-        # ---- Z-snap to terrain ----------------------------------
-        # The SQP only enforces ``foot ≥ terrain`` via hard non-
-        # penetration; nothing pulls the foot **down** to actually
-        # touch the heightfield, so a clip whose source actor was
-        # genuinely airborne for some frames may end the entire
-        # retargeted trajectory floating a few centimetres above
-        # the heightfield even at frames where contact was clearly
-        # intended.  Per the user spec, the lowest foot point over
-        # the **whole** clip should sit exactly on the heightfield
-        # (gap = 0); anything above that "floor offset" is removed
-        # in a single global Z translation that preserves all
-        # relative motion (jumps, stairs, terrain following).
-        #
-        # We re-use the SAME collision model that the SQP just
-        # solved against — so foot geoms and the heightfield
-        # exist in a single MuJoCo scene at the right scale — but
-        # measure the gap **geometrically** (foot OBB lowest Z vs
-        # bilinear-interp terrain Z at that XY) rather than via
-        # ``mj_geomDistance``.  The latter returns ambiguous deep-
-        # penetration depths for any foot pose that intersects the
-        # hfield solid (a known MuJoCo limitation for non-convex
-        # primitives), which would falsely report the entire clip
-        # as "in penetration" and disable the snap.  The OBB-Z vs
-        # bilinear-Z formulation is what the user wrote in their
-        # spec ("足端最低点和跑酷地形之间的距离") and is robust
-        # against constraint slack at SQP termination.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         floor_offset = 0.0
         signed_min_gap = float("nan")
         used_terrain_snap = False
@@ -1612,8 +1618,8 @@ class InteractionMeshPipeline:
             signed_min_gap = self._terrain_signed_min_gap_geom(
                 coll_model, coll_data, joint_q, terrain_robot,
             )
-            # Bidirectional: float → push down; penetrate → lift up, so the
-            # clip-wide minimum foot↔terrain gap is exactly 0.
+
+
             floor_offset = float(signed_min_gap) if np.isfinite(signed_min_gap) else 0.0
             used_terrain_snap = True
             if abs(floor_offset) > 1e-4:
@@ -1626,7 +1632,7 @@ class InteractionMeshPipeline:
                     signed_min_gap,
                 )
         elif bool(getattr(self.cfg, "clip_floor_snap", True)):
-            # Flat-ground clips (LAFAN, etc.): no heightfield — snap sole to z=0.
+
             from hhtools.retarget.clip_ground_snap import snap_joint_q_clip_floor
 
             joint_q, floor_offset = snap_joint_q_clip_floor(
@@ -1753,11 +1759,11 @@ class InteractionMeshPipeline:
             }
         nh = int(targets[0].n_human_vertices)
         F = int(traj.shape[0])
-        # Diagnostic only — replaying ``mj_forward`` for *every* frame of a long
-        # terrain clip (thousands of frames) is a second full FK pass purely to
-        # log alignment numbers.  Sample an evenly-spaced subset: the
-        # mean/max/region stats are statistically indistinguishable while the
-        # cost stays bounded regardless of clip length.
+
+
+
+
+
         if F > _ALIGNMENT_DIAG_MAX_FRAMES:
             sample_idx = np.linspace(
                 0, F - 1, _ALIGNMENT_DIAG_MAX_FRAMES,
@@ -1785,7 +1791,7 @@ class InteractionMeshPipeline:
                 off = np.asarray(robot_points[i].local_offset, dtype=np.float64).reshape(3)
                 p_w = d.xpos[bid].astype(np.float64) + R @ off
                 all_err[row_i, i] = float(np.linalg.norm(p_w - target_pos[i]))
-        # Per-semantic subsets so we can spot which body region drifts.
+
         wrist_idx = [i for i, p in enumerate(robot_points[:nh]) if "wrist" in str(p.semantic).lower()]
         ankle_idx = [i for i, p in enumerate(robot_points[:nh]) if "ankle" in str(p.semantic).lower()]
         out = {
@@ -1849,8 +1855,8 @@ class InteractionMeshPipeline:
         """
         import mujoco
 
-        # Group collidable geoms by foot body so we can reduce
-        # "lowest world-Z" per body × frame.
+
+
         foot_body_to_geoms: dict[int, list[int]] = {}
         for g in range(coll_model.ngeom):
             if int(coll_model.geom_contype[g]) == 0 and int(coll_model.geom_conaffinity[g]) == 0:
@@ -1904,17 +1910,17 @@ class InteractionMeshPipeline:
                 coll_data.qpos[qadr] = float(row[7 + k])
             mujoco.mj_forward(coll_model, coll_data)
             for bid, geoms in foot_body_to_geoms.items():
-                # Body XY (= the foot's standing location).
+
                 bx, by, _ = coll_data.xpos[bid]
                 h_terrain = hf_at(float(bx), float(by))
                 if h_terrain is None:
                     continue
-                # Lowest reachable world-Z over all collidable geoms
-                # rigidly attached to this foot body.  Closed-form
-                # OBB minimum-Z: z_c − Σ |R[2,i]| · h_i.  Includes
-                # the AABB centre offset ``ab[:3]`` projected onto
-                # world Z so spheres / capsules whose local centres
-                # are non-zero don't drift up.
+
+
+
+
+
+
                 z_lowest = float("inf")
                 for g in geoms:
                     cw_z = float(coll_data.geom_xpos[g, 2])

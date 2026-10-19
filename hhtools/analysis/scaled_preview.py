@@ -279,9 +279,9 @@ def _uniform_scaled_joint_positions(
             scaler_cfg, human_height, motion, ik_map_keys=ik_canons,
         )
     )
-    # Flat ground: match Newton ``_floor_normalize_motion`` (foot floor when
-    # upright stance exists).  Terrain/object clips keep the all-joint floor
-    # so the yellow overlay stays co-aligned with scaled scene geometry.
+
+
+
     if motion_has_interaction_scene(motion):
         z_min = float(human_source_floor_z_world(motion))
     else:
@@ -373,7 +373,7 @@ def compute_web_scaled_preview(
         model.preset.name, model.preset.ik_map, motion,
     )
 
-    if int(motion.num_bones) < 10:
+    if model.preset.fixed_base or int(motion.num_bones) < 10:
         try:
             from hhtools.retarget.newton_basic import NewtonBasicPipeline, PipelineConfig
 
@@ -390,6 +390,8 @@ def compute_web_scaled_preview(
                 ik_map_canonicals=ik_canons,
             )
         except ModuleNotFoundError:
+            if model.preset.fixed_base:
+                raise
             return _uniform_scaled_preview_fallback(
                 motion, scaler_cfg, float(human_height), ik_canons,
                 max_frames=max_frames, robot_model=model,
@@ -433,11 +435,11 @@ def compute_web_scaled_preview(
                 robot_model=model,
             )
 
-    # Dense source topology always uses uniform ``robot_height / human_height``
-    # scaling on raw source positions.  Per-joint soma-style scaler targets are
-    # only exact at calibration rest — on motion frames they distort segment
-    # lengths (puffed torso, elongated limbs) and sit at robot pelvis height
-    # instead of the grounded blue source skeleton.
+
+
+
+
+
     z_correction = resolve_scaled_overlay_z_correction(
         motion, scaler, overlay_ratio,
     )
@@ -455,7 +457,7 @@ def compute_web_scaled_preview(
     if vis_idx.size == 0:
         vis_idx = np.arange(len(jn), dtype=np.int32)
 
-    # Remap segments to visible joint subset.
+
     old_to_new = {int(old): int(new) for new, old in enumerate(vis_idx.tolist())}
     bone_names = [jn[int(i)] for i in vis_idx.tolist()]
     seg_pairs: list[tuple[int, int]] = []

@@ -6,13 +6,16 @@
     <joint limited="true"/>
     <geom contype="0" conaffinity="0" condim="1" group="1" density="0" friction="1 0.005 0.0001"/>
     <default class="torso_motor">
-      <joint armature="0.00985321" damping="0.01" frictionloss="0.1"/>
+      <joint armature="0.12441599999999998" damping="0.01" frictionloss="0.1"/>
     </default>
     <default class="shoulder_motor">
-      <joint armature="0.0030254460886951994" damping="0.01" frictionloss="0.1"/>
+      <joint armature="0.031520000000000006" damping="0.01" frictionloss="0.1"/>
+    </default>
+    <default class="neck_motor">
+      <joint armature="0.0019000000000000002" damping="0.01" frictionloss="0.01"/>
     </default>
     <default class="wrist_motor">
-      <joint armature="0.00074568" damping="0.01" frictionloss="0.01"/>
+      <joint armature="0.0019000000000000002" damping="0.01" frictionloss="0.01"/>
     </default>
   </default>
   <asset>
@@ -170,12 +173,12 @@
             </body>
             <body name="head_pitch_link" pos="-0.0048 0 0.404">
               <inertial pos="-2.177077962350893e-16 0.001067770820492905 0.02929583226079513" mass="0.06457926910517392" diaginertia="3.324284411105977e-05 5.252288770062445e-05 5.941599574266363e-05" quat="0.7065760656468075 -0.0273909374625627 -0.027390937462563 -0.7065760656468079"/>
-              <joint name="head_pitch_joint" class="wrist_motor" type="hinge" axis="0 1 0" range="-1.57 1.57"/>
+              <joint name="head_pitch_joint" class="neck_motor" type="hinge" axis="0 1 0" range="-1.57 1.57"/>
               <geom type="mesh" mesh="head_pitch_link"/>
               <geom name="head_pitch_link_collision" type="mesh" mesh="head_pitch_link" contype="32" conaffinity="26" group="0"/>
               <body name="head_yaw_link" pos="0 0 0.0542">
                 <inertial pos="5.988574467793127e-05 5.661810453359486e-05 0.01107411056930085" mass="0.3528018307094871" diaginertia="0.0001644749200452098 0.0001655546387126696 0.0001680748971544698" quat="0.6646303755663018 0.6806704880404763 0.1870673909916189 -0.2448671921939022"/>
-                <joint name="head_yaw_joint" class="wrist_motor" type="hinge" axis="0 0 1" range="-2.618 2.618"/>
+                <joint name="head_yaw_joint" class="neck_motor" type="hinge" axis="0 0 1" range="-2.618 2.618"/>
                 <camera name="head_left_camera" pos="0.08822307593 0.02979965544 0.04541159739" xyaxes="0 -1 0 0.1719291 0 0.985109326" fovy="125" resolution="1920 1080"/>
                 <camera name="head_right_camera" pos="0.08822307593 -0.03020034456 0.04541159739" xyaxes="0 -1 0 0.1719291 0 0.985109326" fovy="125" resolution="1920 1080"/>
                 <geom type="mesh" mesh="head_yaw_link"/>
@@ -188,24 +191,24 @@
     </body>
   </worldbody>
   <actuator>
-    <position name="waist_yaw_joint" joint="waist_yaw_joint" ctrlrange="-2.618 2.618" kp="38.89891391234306" kv="2.4763817720221986" forcerange="-60 60"/>
-    <position name="waist_pitch_joint" joint="waist_pitch_joint" ctrlrange="-0.5236 0.5236" kp="38.89891391234306" kv="2.4763817720221986" forcerange="-60 60"/>
-    <position name="waist_roll_joint" joint="waist_roll_joint" ctrlrange="-0.5236 0.5236" kp="38.89891391234306" kv="2.4763817720221986" forcerange="-60 60"/>
-    <position name="right_shoulder_pitch_joint" joint="right_shoulder_pitch_joint" ctrlrange="-3.1415 1.0472" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="right_shoulder_roll_joint" joint="right_shoulder_roll_joint" ctrlrange="-2.2515 1.5882" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="right_shoulder_yaw_joint" joint="right_shoulder_yaw_joint" ctrlrange="-2.618 2.618" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="right_elbow_joint" joint="right_elbow_joint" ctrlrange="-0.78 1.5708" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="right_wrist_roll_joint" joint="right_wrist_roll_joint" ctrlrange="-2.67 2.67" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="right_wrist_yaw_joint" joint="right_wrist_yaw_joint" ctrlrange="-1.309 1.309" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="right_wrist_pitch_joint" joint="right_wrist_pitch_joint" ctrlrange="-1.5708 1.5708" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="left_shoulder_pitch_joint" joint="left_shoulder_pitch_joint" ctrlrange="-3.1415 1.0472" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="left_shoulder_roll_joint" joint="left_shoulder_roll_joint" ctrlrange="-1.5882 2.2515" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="left_shoulder_yaw_joint" joint="left_shoulder_yaw_joint" ctrlrange="-2.618 2.618" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="left_elbow_joint" joint="left_elbow_joint" ctrlrange="-0.78 1.5708" kp="11.943982412897888" kv="0.7603775364861449" forcerange="-30 30"/>
-    <position name="left_wrist_roll_joint" joint="left_wrist_roll_joint" ctrlrange="-2.67 2.67" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="left_wrist_yaw_joint" joint="left_wrist_yaw_joint" ctrlrange="-1.309 1.309" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="left_wrist_pitch_joint" joint="left_wrist_pitch_joint" ctrlrange="-1.5708 1.5708" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="head_pitch_joint" joint="head_pitch_joint" ctrlrange="-1.57 1.57" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
-    <position name="head_yaw_joint" joint="head_yaw_joint" ctrlrange="-2.618 2.618" kp="2.943826643921725" kv="0.18740982479430696" forcerange="-6 6"/>
+    <position name="waist_yaw_joint" joint="waist_yaw_joint" ctrlrange="-2.618 2.618" kp="491.1746804663734" kv="31.269151327122213" forcerange="-97 97"/>
+    <position name="waist_pitch_joint" joint="waist_pitch_joint" ctrlrange="-0.5236 0.5236" kp="491.1746804663734" kv="31.269151327122213" forcerange="-97 97"/>
+    <position name="waist_roll_joint" joint="waist_roll_joint" ctrlrange="-0.5236 0.5236" kp="491.1746804663734" kv="31.269151327122213" forcerange="-97 97"/>
+    <position name="right_shoulder_pitch_joint" joint="right_shoulder_pitch_joint" ctrlrange="-3.1415 1.0472" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="right_shoulder_roll_joint" joint="right_shoulder_roll_joint" ctrlrange="-2.2515 1.5882" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="right_shoulder_yaw_joint" joint="right_shoulder_yaw_joint" ctrlrange="-2.618 2.618" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="right_elbow_joint" joint="right_elbow_joint" ctrlrange="-0.78 1.5708" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="right_wrist_roll_joint" joint="right_wrist_roll_joint" ctrlrange="-2.67 2.67" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="right_wrist_yaw_joint" joint="right_wrist_yaw_joint" ctrlrange="-1.309 1.309" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="right_wrist_pitch_joint" joint="right_wrist_pitch_joint" ctrlrange="-1.5708 1.5708" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="left_shoulder_pitch_joint" joint="left_shoulder_pitch_joint" ctrlrange="-3.1415 1.0472" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="left_shoulder_roll_joint" joint="left_shoulder_roll_joint" ctrlrange="-1.5882 2.2515" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="left_shoulder_yaw_joint" joint="left_shoulder_yaw_joint" ctrlrange="-2.618 2.618" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="left_elbow_joint" joint="left_elbow_joint" ctrlrange="-0.78 1.5708" kp="124.43597228893465" kv="7.921840035292024" forcerange="-40 40"/>
+    <position name="left_wrist_roll_joint" joint="left_wrist_roll_joint" ctrlrange="-2.67 2.67" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="left_wrist_yaw_joint" joint="left_wrist_yaw_joint" ctrlrange="-1.309 1.309" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="left_wrist_pitch_joint" joint="left_wrist_pitch_joint" ctrlrange="-1.5708 1.5708" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="head_pitch_joint" joint="head_pitch_joint" ctrlrange="-1.57 1.57" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
+    <position name="head_yaw_joint" joint="head_yaw_joint" ctrlrange="-2.618 2.618" kp="7.500899344827912" kv="0.4775220833456486" forcerange="-12.5 12.5"/>
   </actuator>
 </mujoco>

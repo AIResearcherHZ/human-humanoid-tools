@@ -151,11 +151,11 @@ BODY_TREE.update(
     {
         "head_pitch_link": (
             "waist_roll_link",
-            {"axis": "0 1 0", "range": "-1.57 1.57", "cls": "wrist_motor"},
+            {"axis": "0 1 0", "range": "-1.57 1.57", "cls": "neck_motor"},
         ),
         "head_yaw_link": (
             "head_pitch_link",
-            {"axis": "0 0 1", "range": "-2.618 2.618", "cls": "wrist_motor"},
+            {"axis": "0 0 1", "range": "-2.618 2.618", "cls": "neck_motor"},
         ),
     }
 )
@@ -346,15 +346,18 @@ lines.append(
     '    <geom contype="0" conaffinity="0" condim="1" group="1" density="0" friction="1 0.005 0.0001" />'
 )
 lines.append('    <default class="torso_motor">')
-lines.append('      <joint armature="0.00985321" damping="0.01" frictionloss="0.1" />')
+lines.append('      <joint armature="0.12441599999999998" damping="0.01" frictionloss="0.1" />')
 lines.append("    </default>")
 lines.append('    <default class="shoulder_motor">')
 lines.append(
-    '      <joint armature="0.0030254460886951994" damping="0.01" frictionloss="0.1" />'
+    '      <joint armature="0.031520000000000006" damping="0.01" frictionloss="0.1" />'
 )
 lines.append("    </default>")
+lines.append('    <default class="neck_motor">')
+lines.append('      <joint armature="0.0019000000000000002" damping="0.01" frictionloss="0.01" />')
+lines.append("    </default>")
 lines.append('    <default class="wrist_motor">')
-lines.append('      <joint armature="0.00074568" damping="0.01" frictionloss="0.01" />')
+lines.append('      <joint armature="0.0019000000000000002" damping="0.01" frictionloss="0.01" />')
 lines.append("    </default>")
 lines.append("  </default>")
 lines.append("  <asset>")
@@ -383,135 +386,135 @@ ACT = [
     (
         "waist_yaw_joint",
         "-2.618 2.618",
-        "38.89891391234306",
-        "2.4763817720221986",
-        "-60 60",
+        "491.1746804663734",
+        "31.269151327122213",
+        "-97 97",
     ),
     (
         "waist_pitch_joint",
         "-0.5236 0.5236",
-        "38.89891391234306",
-        "2.4763817720221986",
-        "-60 60",
+        "491.1746804663734",
+        "31.269151327122213",
+        "-97 97",
     ),
     (
         "waist_roll_joint",
         "-0.5236 0.5236",
-        "38.89891391234306",
-        "2.4763817720221986",
-        "-60 60",
+        "491.1746804663734",
+        "31.269151327122213",
+        "-97 97",
     ),
     (
         "right_shoulder_pitch_joint",
         "-3.1415 1.0472",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "right_shoulder_roll_joint",
         "-2.2515 1.5882",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "right_shoulder_yaw_joint",
         "-2.618 2.618",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "right_elbow_joint",
         "-0.78 1.5708",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "right_wrist_roll_joint",
         "-2.67 2.67",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "right_wrist_yaw_joint",
         "-1.309 1.309",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "right_wrist_pitch_joint",
         "-1.5708 1.5708",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "left_shoulder_pitch_joint",
         "-3.1415 1.0472",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "left_shoulder_roll_joint",
         "-1.5882 2.2515",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "left_shoulder_yaw_joint",
         "-2.618 2.618",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "left_elbow_joint",
         "-0.78 1.5708",
-        "11.943982412897888",
-        "0.7603775364861449",
-        "-30 30",
+        "124.43597228893465",
+        "7.921840035292024",
+        "-40 40",
     ),
     (
         "left_wrist_roll_joint",
         "-2.67 2.67",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "left_wrist_yaw_joint",
         "-1.309 1.309",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "left_wrist_pitch_joint",
         "-1.5708 1.5708",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "head_pitch_joint",
         "-1.57 1.57",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
     (
         "head_yaw_joint",
         "-2.618 2.618",
-        "2.943826643921725",
-        "0.18740982479430696",
-        "-6 6",
+        "7.500899344827912",
+        "0.4775220833456486",
+        "-12.5 12.5",
     ),
 ]
 lines.append("  <actuator>")
@@ -526,14 +529,16 @@ with open(f"{OUT}/Semi_Taks_LV1.xml", "w") as f:
     f.write("\n".join(lines))
 
 URDF_LIMITS = {
-    "torso_motor": ("60", "4.19"),
-    "shoulder_motor": ("30", "3.77"),
-    "wrist_motor": ("6", "12.57"),
+    "neck_motor": ("12.5", "47.12388980384689"),
+    "torso_motor": ("97", "12.042771838760872"),
+    "shoulder_motor": ("40", "11.728612573401893"),
+    "wrist_motor": ("12.5", "47.12388980384689"),
 }
 ARMATURE = {
-    "torso_motor": "0.00985321",
-    "shoulder_motor": "0.0030254460886951994",
-    "wrist_motor": "0.00074568",
+    "neck_motor": "0.0019000000000000002",
+    "torso_motor": "0.12441599999999998",
+    "shoulder_motor": "0.031520000000000006",
+    "wrist_motor": "0.0019000000000000002",
 }
 u = []
 u.append("<?xml version='1.0' encoding='utf-8'?>")
@@ -651,6 +656,22 @@ with open(f"{OUT}/Semi_Taks_LV1.urdf", "w") as f:
     f.write(gen_urdf())
 
 ledger = {
+    "motor_configuration": {
+        "platform_voltage_v": 48,
+        "parameter_source": "/home/xhz/atom01_train/actuator_params_mit.csv",
+        "specification_source": "2026年-达妙科技-产品选型表-2026-09-23.pdf",
+        "torque_basis": "peak",
+        "speed_basis": "no_load_speed",
+        "speed_unit": "rad/s",
+        "waist_representation": "serial_simplification",
+        "motor_types": {
+            "shoulder_elbow": "DM4340P_V1_1",
+            "wrist": "DM4310P",
+            "waist": "DM6248P",
+            "head": "DM4310P"
+        },
+        "geometry_status": "原 CAD 的 RP 外形与刚体质量惯量仍保留；达妙电机替换后的实体质量、质心和完整惯量需对应 CAD 或实测数据。"
+    },
     "robot": "Semi_Taks_LV1",
     "consumers": ["MuJoCo", "urdfdom", "Pinocchio", "RViz"],
     "units": {"length": "m", "mass": "kg", "angle": "rad", "mesh": "m"},

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import threading
 from dataclasses import dataclass
@@ -13,8 +14,6 @@ for _p in (ROOT, ROOT / "taks_level1", ROOT / "taks_level1" / "libs" / "SDK"):
         sys.path.insert(0, sp)
 import mujoco
 import numpy as np
-from libs.drivers.mujoco.model import load_model
-from libs.drivers.rate_limiter import RateLimiter, perf_counter
 
 SCENE_XML = Path(__file__).with_name("scene_Semi_Taks_LV1.xml")
 CAN_POLL_INTERVAL = 0.02
@@ -64,7 +63,6 @@ MOTOR_TYPE: dict[tuple[str, int], str] = {
     **{("waist", did): WAIST for did in (0x01, 0x02, 0x03)},
     **{("head", did): HEAD for did in (0x01, 0x02)},
 }
-from backend.services.config import DEFAULT_CAN_MAP
 
 
 @dataclass(frozen=True)
@@ -209,6 +207,52 @@ class CanReader(threading.Thread):
         self._stop_event.set()
 
 
+def configure_graphics():
+    import glfw
+
+    if sys.platform != "linux":
+        return
+    if os.environ.get("DISPLAY"):
+        glfw.init_hint(glfw.PLATFORM, glfw.PLATFORM_X11)
+    if os.path.exists("/proc/driver/nvidia/version"):
+        os.environ.setdefault("__NV_PRIME_RENDER_OFFLOAD", "1")
+        os.environ.setdefault("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+        if os.environ["__GLX_VENDOR_LIBRARY_NAME"] == "nvidia" and mujoco.get_mju_user_warning() is None:
+            mujoco.set_mju_user_warning(_graphics_warning)
+
+
+def _graphics_warning(message):
+    if message == "OpenGL error 0x502 in or before mjr_makeContext":
+        return
+    print(f"WARNING: {message}", file=sys.stderr, flush=True)
+
+
+def run_simulation(scene, rate, headless):
+    import time
+    from contextlib import nullcontext
+    from mujoco import viewer
+
+    model = mujoco.MjModel.from_xml_path(str(scene))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    if not headless:
+        configure_graphics()
+    context = nullcontext(None) if headless else viewer.launch_passive(model, data)
+    substeps = max(1, round(1.0 / (rate * model.opt.timestep)))
+    try:
+        with context as handle:
+            while handle is None or handle.is_running():
+                started = time.perf_counter()
+                mujoco.mj_step(model, data, nstep=substeps)
+                if handle is not None:
+                    handle.sync()
+                delay = 1.0 / rate - (time.perf_counter() - started)
+                if delay > 0:
+                    time.sleep(delay)
+    except KeyboardInterrupt:
+        pass
+
+
 def run(
     specs: list,
     title: str,
@@ -220,7 +264,7 @@ def run(
     list_only: bool,
     address=None,
 ) -> None:
-    model = load_model(scene)
+    model = mujoco.MjModel.from_xml_path(str(scene))
     model.opt.disableflags |= mujoco.mjtDisableBit.mjDSBL_CONTACT
     data = mujoco.MjData(model)
     mujoco.mj_resetData(model, data)
@@ -282,20 +326,15 @@ def run(
                 f"  {s.group}->{s.bus}:ID 0x{s.device_id:02X} {s.motor_type:8s} -> {s.joint}"
             )
         return
+    from libs.drivers.rate_limiter import RateLimiter, perf_counter
+
     cache = MotorDataCache()
     readers = [
         CanReader(bus, group, cache, address=address) for bus, group in by_bus.items()
     ]
-    for r in readers:
-        r.set_damping(damping)
-        r.start()
     cmd = np.zeros(model.nu)
     substeps = max(1, round(1.0 / rate / model.opt.timestep))
     viewer = None
-    if not headless:
-        from libs.drivers.mujoco.viewer import Visualization
-        viewer = Visualization(model, data)
-    rl = RateLimiter(rate)
     t_first = None
     next_sync = 0.0
     next_log = perf_counter() + 2.0
@@ -304,6 +343,15 @@ def run(
         f"运行中 ({('阻尼' if damping else '自由')}模式, {rate:.0f}Hz). Ctrl+C 退出。"
     )
     try:
+        rl = RateLimiter(rate)
+        if not headless:
+            from mujoco.viewer import launch_passive
+
+            configure_graphics()
+            viewer = launch_passive(model, data)
+        for r in readers:
+            r.set_damping(damping)
+            r.start()
         while viewer is None or viewer.is_running():
             snap = cache.snapshot()
             online = 0
@@ -326,7 +374,7 @@ def run(
             data.ctrl[:] = q_now + f * (cmd - q_now)
             mujoco.mj_step(model, data, nstep=substeps)
             if viewer is not None and now >= next_sync:
-                viewer.publish()
+                viewer.sync()
                 next_sync = now + 1.0 / 60.0
             ticks += 1
             if now >= next_log:
@@ -342,16 +390,20 @@ def run(
         for r in readers:
             r.stop()
         for r in readers:
-            r.join(timeout=0.5)
+            if r.ident is not None:
+                r.join(timeout=0.5)
         if viewer is not None:
             viewer.close()
 
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=TITLE)
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--sim", dest="real", action="store_false", help="仿真模式（默认）")
+    mode.add_argument("--real", action="store_true", help="连接真机读取电机")
+    p.set_defaults(real=False)
     p.add_argument(
         "--address",
-        "--remote",
         dest="address",
         default=None,
         help="远程 QUIC 地址 HOST[:PORT]，省略时使用本地 SHM，默认端口 5555",
@@ -378,6 +430,13 @@ def main() -> None:
     args = build_parser().parse_args()
     if not args.scene.exists():
         raise SystemExit(f"找不到场景文件: {args.scene}")
+    if not np.isfinite(args.rate) or args.rate <= 0:
+        raise SystemExit("rate 必须为正数")
+    if not args.real and not args.list:
+        run_simulation(args.scene, args.rate, args.headless)
+        return
+    from backend.services.config import DEFAULT_CAN_MAP
+
     specs = build_specs(parse_can_map(args.cans, DEFAULT_CAN_MAP))
     run(
         specs,

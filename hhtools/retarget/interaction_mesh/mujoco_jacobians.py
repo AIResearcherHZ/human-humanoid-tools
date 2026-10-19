@@ -1,8 +1,8 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 hhtools contributors
-# SPDX-License-Identifier: Apache-2.0
-#
-# qdot→qpos block for FREE joints adapted from holosoma_retargeting
-# (Apache-2.0). See NOTICE.
+
+
+
+
+
 """MuJoCo translational Jacobians ∂x/∂qpos for interaction-mesh SQP."""
 
 from __future__ import annotations
@@ -95,8 +95,7 @@ def pack_joint_q_csv(
 ) -> NDArray[np.float32]:
     """Map MuJoCo ``qpos`` to CSV ``(7 + N,)`` layout: xyz + quat xyzw + actuated.
 
-    Actuated coordinates follow MuJoCo joint declaration order (HINGE/SLIDE
-    only), which matches URDF→MJCF compilation order for standard presets.
+    Actuated coordinates follow robot_dof_names.
     """
     import mujoco
 
@@ -110,17 +109,14 @@ def pack_joint_q_csv(
         [qpos[0], qpos[1], qpos[2], qx, qy, qz, qw],
         dtype=np.float32,
     )
-    hinge_vals: list[float] = []
-    for j in range(model.njnt):
-        jt = model.jnt_type[j]
-        if jt in (mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE):
-            adr = int(model.jnt_qposadr[j])
-            hinge_vals.append(float(qpos[adr]))
-    n_act = len(robot_dof_names)
-    if len(hinge_vals) != n_act:
-        raise ValueError(
-            f"MuJoCo hinge/slide count {len(hinge_vals)} != len(robot_dof_names)={n_act}"
-        )
+    hinge_vals = np.empty(len(robot_dof_names), dtype=np.float32)
+    for i, name in enumerate(robot_dof_names):
+        joint = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+        if joint < 0 or model.jnt_type[joint] not in (
+            mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE,
+        ):
+            raise ValueError(f"MuJoCo scalar joint not found: {name!r}")
+        hinge_vals[i] = qpos[int(model.jnt_qposadr[joint])]
     return np.concatenate([root7, np.asarray(hinge_vals, dtype=np.float32)], axis=0)
 
 

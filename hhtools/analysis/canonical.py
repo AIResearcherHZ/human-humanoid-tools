@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+
 """Cross-source projection onto a canonical motion-feature representation.
 
 Both human source clips (:class:`~hhtools.core.motion.Motion`, any rig) and
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
-# Canonical joint slots we care about for analysis (subset of canonical_human.yaml).
+
 CANONICAL_JOINTS: tuple[str, ...] = (
     "hips",
     "chest",
@@ -91,7 +91,7 @@ class CanonicalMotionFeatures:
     dof_q: NDArray | None = None
     up_axis: str = "Z"
 
-    # ----------------------------------------------------------------- shape
+
 
     @property
     def num_frames(self) -> int:
@@ -110,7 +110,7 @@ class CanonicalMotionFeatures:
     def has(self, name: str) -> bool:
         return name in self.joint_pos
 
-    # ----------------------------------------------------------------- queries
+
 
     def joint_velocity(self, name: str) -> NDArray | None:
         """Finite-difference velocity (m/s) of canonical joint ``name``."""
@@ -186,8 +186,8 @@ def project_motion(motion) -> CanonicalMotionFeatures:
     rename = auto_source_to_canonical(tuple(bone_names))
     canon_to_idx = _invert_rename(rename, bone_names)
 
-    positions = np.asarray(motion.positions, dtype=np.float32)  # (F, B, 3)
-    quats = np.asarray(motion.quaternions, dtype=np.float32)  # (F, B, 4)
+    positions = np.asarray(motion.positions, dtype=np.float32)
+    quats = np.asarray(motion.quaternions, dtype=np.float32)
 
     joint_pos: dict[str, NDArray] = {}
     for canon in CANONICAL_JOINTS:
@@ -195,7 +195,7 @@ def project_motion(motion) -> CanonicalMotionFeatures:
         if idx is not None:
             joint_pos[canon] = positions[:, idx, :].copy()
 
-    # Root: prefer mapped hips, else the hierarchy root (index 0).
+
     root_idx = canon_to_idx.get("hips")
     if root_idx is None:
         roots = motion.hierarchy.root_indices()
@@ -222,12 +222,18 @@ def project_robot_csv(csv) -> CanonicalMotionFeatures:
     entry (the root) so locomotion / inverted metrics still work; ``dof_q`` drives
     the joint-velocity complexity signal.
     """
-    joint_q = np.asarray(csv.joint_q, dtype=np.float32)  # (F, 7 + N)
-    if joint_q.shape[1] < 7:
-        raise ValueError(f"robot CSV joint_q has too few columns: {joint_q.shape}")
-    root_pos = joint_q[:, 0:3].copy()
-    root_quat = joint_q[:, 3:7].copy()
-    dof_q = joint_q[:, 7:].copy() if joint_q.shape[1] > 7 else None
+    joint_q = np.asarray(csv.joint_q, dtype=np.float32)
+    root_count = joint_q.shape[1] - len(csv.dof_names)
+    if root_count == 7:
+        root_pos = joint_q[:, :3].copy()
+        root_quat = joint_q[:, 3:7].copy()
+    elif root_count == 0:
+        root_pos = np.zeros((len(joint_q), 3), dtype=np.float32)
+        root_quat = np.zeros((len(joint_q), 4), dtype=np.float32)
+        root_quat[:, 3] = 1.0
+    else:
+        raise ValueError(f"robot CSV root coordinate count must be 0 or 7: {root_count}")
+    dof_q = joint_q[:, root_count:].copy() if csv.dof_names else None
 
     return CanonicalMotionFeatures(
         fps=float(csv.sample_rate),

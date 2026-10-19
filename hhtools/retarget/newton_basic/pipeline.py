@@ -121,40 +121,20 @@ def _compute_perframe_yaw(
     Uses both shoulder and hip axes when available, averaging them for
     robustness against arm-swing noise.
     """
-    shoulder_l = shoulder_r = hip_l = hip_r = None
-    for i, e in enumerate(entries):
-        if e.canonical_name == "left_shoulder":
-            shoulder_l = i
-        elif e.canonical_name == "right_shoulder":
-            shoulder_r = i
-        elif e.canonical_name == "left_hip":
-            hip_l = i
-        elif e.canonical_name == "right_hip":
-            hip_r = i
+    targets = {entry.canonical_name: ik_targets[:, i] for i, entry in enumerate(entries)}
+    return _compute_target_yaw(targets)
 
-    pairs: list[tuple[int, int]] = []
-    if shoulder_l is not None and shoulder_r is not None:
-        pairs.append((shoulder_l, shoulder_r))
-    if hip_l is not None and hip_r is not None:
-        pairs.append((hip_l, hip_r))
-    if not pairs:
+
+def _compute_target_yaw(targets: dict[str, NDArray]) -> NDArray | None:
+    all_angles = []
+    for left, right in (("left_shoulder", "right_shoulder"), ("left_hip", "right_hip")):
+        if left not in targets or right not in targets:
+            continue
+        lateral = targets[left][:, :2] - targets[right][:, :2]
+        all_angles.append(np.arctan2(-lateral[:, 0], lateral[:, 1]))
+    if not all_angles:
         return None
-
-    F = ik_targets.shape[0]
-    up = np.array([[0.0, 0.0, 1.0]], dtype=np.float32)
-    all_angles: list[NDArray] = []
-
-    for l_idx, r_idx in pairs:
-        p_l = ik_targets[:, l_idx, :3].copy()
-        p_r = ik_targets[:, r_idx, :3].copy()
-        lr = p_l - p_r
-        lr[:, 2] = 0.0
-        fwd = np.cross(lr, np.broadcast_to(up, (F, 3)))
-        fwd[:, 2] = 0.0
-        fwd_norm = np.linalg.norm(fwd, axis=1, keepdims=True)
-        fwd = fwd / np.maximum(fwd_norm, 1e-6)
-        all_angles.append(np.arctan2(fwd[:, 1], fwd[:, 0]))
-
+    F = len(all_angles[0])
     if len(all_angles) == 2:
         cx = np.cos(all_angles[0]) + np.cos(all_angles[1])
         sy = np.sin(all_angles[0]) + np.sin(all_angles[1])
@@ -164,7 +144,7 @@ def _compute_perframe_yaw(
 
 
     if F >= 3:
-        padded = np.pad(angles, 1, mode="edge")
+        padded = np.pad(np.unwrap(angles), 1, mode="edge")
         kernel = np.ones(3, dtype=np.float32) / 3.0
         angles = np.convolve(padded, kernel, mode="valid").astype(np.float32)
 
@@ -630,6 +610,7 @@ class NewtonBasicPipeline:
         canonical_to_target = self._augment_canonical_targets(
             motion, scaler, targets, canonical_to_target,
         )
+        canonical_to_target = self._anchor_fixed_base_targets(motion, canonical_to_target)
         names_list = [e.canonical_name for e in self.ik_mapping.entries]
         F = targets.shape[0]
         out = np.full((F, len(names_list), 7), np.nan, dtype=np.float32)
@@ -759,6 +740,7 @@ class NewtonBasicPipeline:
         canonical_to_target = self._augment_canonical_targets(
             motion, scaler, targets, canonical_to_target,
         )
+        canonical_to_target = self._anchor_fixed_base_targets(motion, canonical_to_target)
         missing = [
             e.canonical_name
             for e in self.ik_mapping.entries
@@ -1006,6 +988,17 @@ class NewtonBasicPipeline:
         *,
         progress_callback: Callable[[int, int], None] | None = None,
     ) -> list[RetargetedMotion]:
+        position_only = [bool(m.num_frames) and _is_position_only(m) for m in motions]
+        if any(position_only) and not all(position_only):
+            results = [None] * len(motions)
+            for mode in (False, True):
+                indices = [i for i, value in enumerate(position_only) if value == mode]
+                group = self._run_batch_with_active_ik_map(
+                    [motions[i] for i in indices], progress_callback=progress_callback,
+                )
+                for i, result in zip(indices, group):
+                    results[i] = result
+            return results
         entries = self.ik_mapping.entries
         M = len(entries)
         n_init = max(0, int(self.config.num_initialization_frames))
@@ -1133,6 +1126,7 @@ class NewtonBasicPipeline:
         canonical_to_target = self._augment_canonical_targets(
             motion, scaler, targets, canonical_to_target,
         )
+        canonical_to_target = self._anchor_fixed_base_targets(motion, canonical_to_target)
         missing = [
             e.canonical_name
             for e in entries
@@ -1176,6 +1170,36 @@ class NewtonBasicPipeline:
             if pelvis_idx is not None and yaw_q is not None:
                 ik_targets[:, pelvis_idx, 3:7] = yaw_q
         return ik_targets
+
+    def _anchor_fixed_base_targets(
+        self,
+        motion: Motion,
+        targets: dict[str, NDArray],
+    ) -> dict[str, NDArray]:
+        if self.ctx.root_coord_count != 0 or not targets:
+            return targets
+        root = targets.get("hips")
+        if root is None:
+            root = targets.get("pelvis")
+        if root is None:
+            raise ValueError("固定基座重定向需要 hips 或 pelvis 根目标")
+        correction = np.zeros_like(root[:, 3:7])
+        if _is_position_only(motion):
+            yaw = _compute_target_yaw(targets)
+            if yaw is None:
+                raise ValueError("仅位置动捕需要左右肩或髋来确定固定基座朝向")
+            correction[:] = Q.conjugate(yaw)
+        else:
+            angle = np.arctan2(root[:, 5], root[:, 6])
+            correction[:, 2] = -np.sin(angle)
+            correction[:, 3] = np.cos(angle)
+        anchored = {}
+        for name, target in targets.items():
+            value = np.empty_like(target)
+            value[:, :3] = Q.rotate(correction, target[:, :3] - root[:, :3])
+            value[:, 3:7] = Q.multiply(correction, target[:, 3:7])
+            anchored[name] = value
+        return anchored
 
     def _augment_canonical_targets(
         self,
@@ -1714,7 +1738,7 @@ class NewtonBasicPipeline:
                 entry.canonical_name, entry.t_weight, preset,
                 robot_model=self.robot,
             )
-            if self._pose_only_retarget:
+            if self._pose_only_retarget and not force_disable_rotation_objectives:
                 t_weight = 0.0
             position_objectives.append(
                 ik.IKObjectivePosition(
@@ -1932,7 +1956,7 @@ class NewtonBasicPipeline:
                 entry.canonical_name, entry.t_weight, preset,
                 robot_model=self.robot,
             )
-            if self._pose_only_retarget:
+            if self._pose_only_retarget and not force_disable_rotation_objectives:
                 t_weight = 0.0
             position_objectives.append(
                 ik.IKObjectivePosition(

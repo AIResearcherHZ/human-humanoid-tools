@@ -1,5 +1,21 @@
 {
   "robot": "Semi_Taks_LV1",
+  "motor_configuration": {
+    "platform_voltage_v": 48,
+    "parameter_source": "/home/xhz/atom01_train/actuator_params_mit.csv",
+    "specification_source": "2026年-达妙科技-产品选型表-2026-09-23.pdf",
+    "torque_basis": "peak",
+    "speed_basis": "no_load_speed",
+    "speed_unit": "rad/s",
+    "waist_representation": "serial_simplification",
+    "motor_types": {
+      "shoulder_elbow": "DM4340P_V1_1",
+      "wrist": "DM4310P",
+      "waist": "DM6248P",
+      "head": "DM4310P"
+    },
+    "geometry_status": "原 CAD 的 RP 外形与刚体质量惯量仍保留；达妙电机替换后的实体质量、质心和完整惯量需对应 CAD 或实测数据。"
+  },
   "consumers": ["MuJoCo", "urdfdom", "Pinocchio", "RViz"],
   "units": {
     "length": "m",
